@@ -303,5 +303,7 @@ svg { flex: none; }
     /* Clear the home indicator, with the same 20px gap above it as everywhere else. */
     bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
   }
+  /* iOS Safari zooms the page into any focused input smaller than 16px, and leaves it zoomed. */
+  .assistant-trigger input { font-size: 1rem; }
   .assistant-placeholder { left: 0.75rem; right: 0.75rem; width: auto; transform: none; bottom: 4.75rem; flex-direction: column; align-items: stretch; gap: 0.875rem; }
 }
