@@ -51,6 +51,7 @@ const PinnedAnswer: ReactFC<IPinnedAnswer> = ({ pinned, onUnpin, onAskNextStep }
         isPinned
         onTogglePin={onUnpin}
         onAskNextStep={onAskNextStep}
+        revealRows={false}
       />
     </motion.section>
   );

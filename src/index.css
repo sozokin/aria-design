@@ -105,6 +105,32 @@
 @theme {
   /* The shell's own desktop breakpoint (styles.css switches at max-width: 760px). */
   --breakpoint-shell: 761px;
+
+  /* Streaming caret */
+  --animate-caret: caret 1s step-end infinite;
+  @keyframes caret {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  /* A ring that keeps radiating from the "Answer ready" pill until it is acted on */
+  --animate-ready-pulse: ready-pulse 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  @keyframes ready-pulse {
+    0% {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+    70%,
+    100% {
+      opacity: 0;
+      transform: scale(1.45);
+    }
+  }
 }
 
 /* Fades the bottom edge of a scroll region while more content sits below. */

@@ -23,7 +23,7 @@ const StreamedText: ReactFC<IStreamedText> = ({ deltas, streaming }) => (
     ))}
     {streaming && (
       <span
-        className="ml-0.5 inline-block h-[1em] w-0.5 translate-y-[0.15em] bg-accent"
+        className="ml-0.5 inline-block h-[1em] w-0.5 translate-y-[0.15em] bg-accent motion-safe:animate-caret"
         aria-hidden="true"
       />
     )}
