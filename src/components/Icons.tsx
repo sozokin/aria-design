@@ -14,7 +14,8 @@ import {
   UsersRound,
 } from 'lucide-react';
 
-export const Icons = {
+/** The shell's icon set, named by what each one means here rather than what it draws. */
+const Icons = {
   arrowUp: ArrowUp,
   briefcase: BriefcaseBusiness,
   help: CircleHelp,
@@ -29,3 +30,5 @@ export const Icons = {
   target: Target,
   users: UsersRound,
 };
+
+export default Icons;
