@@ -10,6 +10,7 @@ import useElementHeight from '@/hooks/useElementHeight';
 import useHasMoreBelow from '@/hooks/useHasMoreBelow';
 import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
 import { EASE_OUT } from '@/lib/motion';
+import { cn } from '@/lib/utils';
 
 import { IAssistantPanel } from './AssistantExperience.types';
 
@@ -33,9 +34,12 @@ const MOBILE_ENTRANCE = {
  * so there is no focus trap. Escape closes; the host returns focus to the entry point. Before
  * anything is asked in a chat the panel asks how it can help and offers a first question.
  *
- * On desktop the panel is anchored by its top edge, placed where the top would sit at full height,
- * so arriving content only ever extends it downward and what has already loaded never moves. On
- * mobile the sheet is a fixed box.
+ * Before anything is asked the panel is docked: it sits on the prompt bar at its natural height, so
+ * "How can I help?" reads as part of the bar. Asking a question raises it. On desktop the raised
+ * panel is anchored by its top edge, placed where the top would sit at full height, so arriving
+ * content only ever extends it downward and what has already loaded never moves. On mobile the
+ * sheet stays on the bar and grows upward to its cap. The move between the two is a layout
+ * animation; the inner height animation carries the size.
  */
 const AssistantPanel: ReactFC<IAssistantPanel> = ({
   turns,
@@ -67,6 +71,7 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
   const [hasEntered, setHasEntered] = useState(false);
 
   const thread = turns[0];
+  const isDocked = thread === undefined;
 
   // Take focus so screen readers announce the dialog; Tab then reaches its controls. Not when the
   // panel was opened by focusing the prompt: focus stays there and the panel is a companion.
@@ -117,11 +122,20 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
       aria-labelledby={titleId}
       tabIndex={-1}
       style={anchor ? { left: anchor.left, width: anchor.width } : undefined}
-      className="fixed inset-x-3 top-8 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-(--z-assistant) flex flex-col rounded-2xl border border-border bg-popover text-popover-foreground shadow-md will-change-transform outline-none shell:inset-x-auto shell:top-[calc(100dvh-5.75rem-var(--assistant-panel-max))] shell:bottom-auto shell:max-h-(--assistant-panel-max) shell:shadow-lg"
+      className={cn(
+        'fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-(--z-assistant) flex max-h-[calc(100dvh-7.25rem-env(safe-area-inset-bottom,0px))] flex-col rounded-2xl border border-border bg-popover text-popover-foreground shadow-md will-change-transform outline-none shell:inset-x-auto shell:max-h-(--assistant-panel-max) shell:shadow-lg',
+        // Docked: on the bar, 1rem above it. Raised: top edge where it sits at full height.
+        isDocked
+          ? 'shell:bottom-[5.75rem]'
+          : 'shell:top-[calc(100dvh-5.75rem-var(--assistant-panel-max))] shell:bottom-auto',
+      )}
+      // Position only: the move from docked to raised glides, while the size is left to the inner
+      // height animation so nothing inside is stretched on the way.
+      layout="position"
       initial={entrance.initial}
       animate={entrance.animate}
       exit={{ ...entrance.exit, transition: { duration: 0.22, ease: EASE_OUT } }}
-      transition={{ duration: 0.38, ease: EASE_OUT }}
+      transition={{ duration: 0.38, ease: EASE_OUT, layout: { duration: 0.45, ease: EASE_OUT } }}
       onAnimationComplete={() => setHasEntered(true)}
     >
       <header className="flex items-start gap-3 border-b border-border px-5 pt-4 pb-3">
