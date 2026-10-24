@@ -107,9 +107,13 @@ const App: ReactFC = () => {
       }, 0);
     });
 
+  // Closing hands focus back to the entry point on desktop (Escape, the close button). On mobile
+  // that would raise the keyboard again under a panel that has just gone, so focus is dropped
+  // instead: panel, focus and keyboard leave together.
   const dismissAssistant = () => {
     assistant.close();
-    focusPromptBar();
+    if (isDesktop) focusPromptBar();
+    else (document.activeElement as HTMLElement | null)?.blur();
   };
 
   // The plus beside the bar: the panel opens on its empty state as a companion, and focus goes to
