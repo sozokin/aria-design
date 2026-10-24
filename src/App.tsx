@@ -122,8 +122,9 @@ const App: ReactFC = () => {
     promptRef.current?.focus();
   };
 
-  // A chat chosen in the rail's history sheet: the panel shows it as a companion, since the sheet
-  // returns focus to its own button as it closes; the live region names the chat.
+  // A chat chosen in a history sheet (the rail's, or the mobile menu's): the panel shows it as a
+  // companion, since the sheet returns focus to its own button as it closes; the live region names
+  // the chat.
   const openChatFromHistory = (chatId: string) => {
     setPanelTakesFocus(false);
     assistant.switchChat(chatId);
@@ -178,15 +179,18 @@ const App: ReactFC = () => {
                     id={RAIL_TOGGLE_SLOT_ID}
                     className="flex w-full items-center justify-between gap-3 shell:w-auto"
                   >
-                    {/* Room on the right for the fixed drawer toggle, so a long greeting never runs under it. */}
+                    {/* Room on the right for the fixed menu toggle, so a long greeting never runs under it. */}
                     <h1 className="greeting pr-10 shell:pr-0">Good to see you, Jordan.</h1>
-                    {!isDesktop && rail.isCollapsed && rail.toggleAnchor && (
+                    {!isDesktop && rail.toggleAnchor && (
                       <TeamOverviewDrawer
                         anchor={rail.toggleAnchor}
                         surfaced={rail.pageScrolled}
+                        collapsed={rail.isCollapsed}
                         pinned={assistant.pinned}
                         onJumpToPinned={jumpToPinned}
-                        onToggleShown={rail.focusToggle}
+                        chats={assistant.chats}
+                        activeChatId={assistant.activeChatId}
+                        onSwitchChat={openChatFromHistory}
                       />
                     )}
                   </div>
@@ -203,8 +207,8 @@ const App: ReactFC = () => {
                     }}
                   />
 
-                  {/* On mobile the team overview comes first, under the brief, until it is collapsed
-                      into the drawer; on desktop it is the right rail. */}
+                  {/* On mobile the team overview also sits inline under the brief, until it is
+                      collapsed into the menu's toggle; on desktop it is the right rail. */}
                   <AnimatePresence
                     initial={false}
                     custom={rail.flight}
