@@ -38,10 +38,15 @@ const App: ReactFC = () => {
   useNeedsBarClearance(mainRef, mainInnerRef);
 
   const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
-  const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
+  // The bar starts empty; the opening question is offered by the brief's suggested next step chip.
+  const [prompt, setPrompt] = useState('');
 
   const thread = assistant.turns[0];
   const latestTurn = assistant.turns[assistant.turns.length - 1];
+  // The brief's suggested next step mirrors the latest answer's; before any answer it is the
+  // question that produces one.
+  const latestCard = [...assistant.turns].reverse().find(turn => turn.card)?.card;
+  const suggestedNextStep = latestCard?.nextStep ?? DEFAULT_PROMPT;
 
   // Whether the next opening should move focus into the panel. Opening by focusing the input must
   // not (WCAG 3.2.1: focus alone never changes context); opening by submitting may.
@@ -140,7 +145,14 @@ const App: ReactFC = () => {
               </div>
 
               <div className="content">
-                <Brief />
+                <Brief
+                  suggestedNextStep={suggestedNextStep}
+                  onAskNextStep={question => {
+                    // If the bar still holds this same question, clear it so the follow-up placeholder shows.
+                    if (prompt.trim() === question) setPrompt('');
+                    askWithFocus(question);
+                  }}
+                />
 
                 {/* On mobile the team overview sits under the brief; on desktop it is the right rail. */}
                 {!isDesktop && (
