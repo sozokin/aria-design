@@ -12,6 +12,7 @@ import PromptBar from '@/widgets/PromptBar';
 import Sidebar from '@/widgets/Sidebar';
 import TeamOverview from '@/widgets/TeamOverview';
 
+import useAssistant from '@/hooks/useAssistant';
 import useColumnAnchor from '@/hooks/useColumnAnchor';
 import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
 import useNeedsBarClearance from '@/hooks/useNeedsBarClearance';
@@ -22,6 +23,7 @@ const TODAY = 'Today · Friday, September 4';
 
 const App: ReactFC = () => {
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
+  const assistant = useAssistant();
 
   const mainRef = useRef<HTMLElement>(null);
   const mainInnerRef = useRef<HTMLDivElement>(null);
@@ -32,18 +34,17 @@ const App: ReactFC = () => {
 
   const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
-  const [submittedPrompt, setSubmittedPrompt] = useState(DEFAULT_PROMPT);
-  const [assistantIsOpen, setAssistantIsOpen] = useState(false);
+
+  const latestTurn = assistant.turns[assistant.turns.length - 1];
 
   const submitPrompt = () => {
     const question = prompt.trim() || DEFAULT_PROMPT;
     setPrompt(question);
-    setSubmittedPrompt(question);
-    setAssistantIsOpen(true);
+    assistant.ask(question);
   };
 
   const dismissAssistant = () => {
-    setAssistantIsOpen(false);
+    assistant.close();
     window.requestAnimationFrame(() => promptRef.current?.focus());
   };
 
@@ -88,9 +89,9 @@ const App: ReactFC = () => {
           </div>
         </div>
 
-        {assistantIsOpen && (
+        {assistant.isOpen && latestTurn && (
           <AssistantExperience
-            prompt={submittedPrompt}
+            prompt={latestTurn.prompt}
             onDismiss={dismissAssistant}
             triggerRef={promptRef}
           />
