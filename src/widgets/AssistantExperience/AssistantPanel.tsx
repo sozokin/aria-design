@@ -1,10 +1,8 @@
-import { useEffect, useId, useRef, type FC as ReactFC } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, type FC as ReactFC } from 'react';
 import { Sparkles, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import AnswerTurn from './AnswerTurn';
-
-import useColumnAnchor from '@/hooks/useColumnAnchor';
 
 import { IAssistantPanel } from './AssistantExperience.types';
 
@@ -18,7 +16,10 @@ import { IAssistantPanel } from './AssistantExperience.types';
  */
 const AssistantPanel: ReactFC<IAssistantPanel> = ({
   turns,
-  columnRef,
+  takeFocus,
+  initialScrollTop,
+  onScrollChange,
+  anchor,
   onDismiss,
   pinned,
   onPin,
@@ -26,13 +27,15 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
 }) => {
   const titleId = useId();
   const rootRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const anchor = useColumnAnchor(columnRef);
   const thread = turns[0];
 
-  // Take focus so screen readers announce the dialog; Tab then reaches its controls.
+  // Take focus so screen readers announce the dialog; Tab then reaches its controls. Not when the
+  // panel was opened by focusing the prompt: focus stays there and the panel is a companion.
   useEffect(() => {
-    rootRef.current?.focus({ preventScroll: true });
+    if (takeFocus) rootRef.current?.focus({ preventScroll: true });
+    // Mount only: later prop changes must not refocus or rescroll an open panel.
   }, []);
 
   useEffect(() => {
@@ -45,6 +48,13 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onDismiss]);
+
+  // Reopening resumes where the reader left off, if they had scrolled. Before paint, so the panel
+  // never flashes at the top first.
+  useLayoutEffect(() => {
+    if (initialScrollTop && scrollRef.current) scrollRef.current.scrollTop = initialScrollTop;
+    // Mount only: later prop changes must not refocus or rescroll an open panel.
+  }, []);
 
   return (
     <section
@@ -77,7 +87,11 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
         </Button>
       </header>
 
-      <div className="min-h-0 shrink overflow-y-auto overscroll-contain">
+      <div
+        ref={scrollRef}
+        onScroll={event => onScrollChange(event.currentTarget.scrollTop)}
+        className="min-h-0 shrink overflow-y-auto overscroll-contain"
+      >
         <div className="flex flex-col gap-5 px-5 py-4">
           {turns.map(turn => {
             const isPinned = pinned.some(entry => entry.turnId === turn.id);

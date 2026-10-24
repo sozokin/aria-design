@@ -1,12 +1,20 @@
-import type { RefObject } from 'react';
-
 import type { CoachingCard, CoachingRow } from '../../../mock/types';
 import type { IPinnedTurn, ITurn } from '@/types/assistant.types';
+import type { IColumnAnchor } from '@/types/layout.types';
 
 export interface IAssistantPanel {
   turns: ITurn[];
-  /** The dashboard column the panel aligns to on desktop. */
-  columnRef: RefObject<HTMLElement | null>;
+  /** Whether to move focus into the dialog on open. */
+  takeFocus: boolean;
+  /** Scroll position to resume at, when the reader had scrolled before closing. */
+  initialScrollTop?: number;
+  /** Reports the scroll position so the host can remember it across a close. */
+  onScrollChange: (scrollTop: number) => void;
+  /**
+   * The dashboard column's box, measured once by the host and shared with the prompt bar. Passed in
+   * rather than measured here, so the panel has its final width on its very first layout.
+   */
+  anchor: IColumnAnchor | null;
   /** The host returns focus to the entry point. */
   onDismiss: () => void;
   pinned: IPinnedTurn[];
