@@ -60,7 +60,13 @@ svg { flex: none; }
   color: var(--text-secondary); font-size: 0.8125rem;
 }
 .sidebar-search svg { width: 16px; height: 16px; }
-.sidebar-search span:first-of-type { flex: 1; }
+.sidebar-search input {
+  flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: transparent;
+  color: var(--foreground); font: inherit;
+}
+.sidebar-search input::placeholder { color: var(--text-secondary); opacity: 1; }
+.sidebar-search:hover { border-color: color-mix(in oklch, var(--ring) 40%, var(--input)); }
+.sidebar-search:focus-within { border-color: var(--ring); box-shadow: 0 0 0 1px color-mix(in oklch, var(--ring) 58%, transparent); }
 .kbd {
   font-family: var(--font-sans); font-size: 0.6875rem; color: var(--text-secondary);
   border: 1px solid var(--border); border-bottom-width: 2px; border-radius: var(--radius-sm);
@@ -75,8 +81,11 @@ svg { flex: none; }
 }
 .nav-item svg { width: 16px; height: 16px; color: var(--text-secondary); }
 .shell-context { cursor: default; }
-.nav-item[aria-current="page"] { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); }
-.nav-item[aria-current="page"] svg { color: currentColor; }
+.nav-item.shell-context { cursor: pointer; } /* navigation entries invite a click; the user row stays default */
+.nav-item[aria-current="page"],
+.nav-item:hover { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); }
+.nav-item[aria-current="page"] svg,
+.nav-item:hover svg { color: currentColor; }
 .sidebar-foot { margin-top: auto; display: grid; gap: 0.125rem; }
 .user-row {
   position: relative; display: flex; align-items: center; gap: 0.625rem; width: 100%;

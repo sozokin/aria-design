@@ -1,7 +1,8 @@
-import { type FC as ReactFC } from 'react';
+import { useCallback, useRef, type FC as ReactFC } from 'react';
 
 import Icons from '@/components/Icons';
 
+import useSearchShortcut from '@/hooks/useSearchShortcut';
 import { PRIMARY_NAV, SECONDARY_NAV } from './nav';
 
 import { ISidebar } from './Sidebar.types';
@@ -10,7 +11,12 @@ import { ISidebar } from './Sidebar.types';
  * The shell's primary navigation. On desktop it is the left column, with a compact mode that keeps
  * only the icons.
  */
-const Sidebar: ReactFC<ISidebar> = ({ isCompact, onCompactChange }) => {
+const Sidebar: ReactFC<ISidebar> = ({ isCompact, onCompactChange, isDesktop }) => {
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const expandSidebar = useCallback(() => onCompactChange(false), [onCompactChange]);
+  useSearchShortcut(searchRef, isDesktop, expandSidebar);
+
   return (
     <aside className="sidebar" aria-label="Primary">
       <div className="brand-row">
@@ -34,10 +40,20 @@ const Sidebar: ReactFC<ISidebar> = ({ isCompact, onCompactChange }) => {
         </button>
       </div>
 
-      <div className="sidebar-search shell-context" data-label="Search" aria-hidden="true">
-        <Icons.search data-icon="inline-start" />
-        <span className="nav-label">Search</span>
-        <span className="kbd">⌘K</span>
+      <div className="sidebar-search" data-label="Search">
+        <Icons.search data-icon="inline-start" aria-hidden="true" />
+        <input
+          ref={searchRef}
+          className="nav-label"
+          type="search"
+          placeholder="Search"
+          aria-label="Search"
+          aria-keyshortcuts="Meta+K Control+K"
+          autoComplete="off"
+        />
+        <span className="kbd" aria-hidden="true">
+          ⌘K
+        </span>
       </div>
 
       <nav className="nav-group" id="primary-navigation" aria-label="Main">
