@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useState, type FC as ReactFC } from 'react'
 import Icons from '@/components/Icons';
 import PromptBarStatus from './PromptBarStatus';
 
+import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
 import useTextLines from '@/hooks/useTextLines';
 
 import { IPromptBar } from './PromptBar.types';
@@ -26,7 +27,8 @@ export const promptBarHeight = (lines: number) =>
  * The shell's AI Assistant entry point: the floating bar at the bottom centre of every page, with
  * the new-chat button beside it in a pill of its own that matches the bar. The field is one line
  * until the question needs more: it then grows to three lines, and beyond that scrolls, keeping the
- * line being typed at the bottom while the lines above fade out at the top.
+ * line being typed at the bottom while the lines above fade out at the top. On desktop Enter asks
+ * and Shift+Enter starts a line; on mobile Enter only starts a line, and the send button asks.
  */
 const PromptBar: ReactFC<IPromptBar> = ({
   ref,
@@ -50,6 +52,7 @@ const PromptBar: ReactFC<IPromptBar> = ({
     ? `min(var(--assistant-w), ${anchor.width - NEW_CHAT_FOOTPRINT_PX}px)`
     : null;
 
+  const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
   const [mirror, setMirror] = useState<HTMLDivElement | null>(null);
   const lines = useTextLines(mirror, value);
   const shownLines = Math.min(lines, MAX_LINES);
@@ -128,8 +131,14 @@ const PromptBar: ReactFC<IPromptBar> = ({
             onClick={onInteract}
             onScroll={event => syncEdges(event.currentTarget)}
             onKeyDown={event => {
-              // Enter asks, Shift+Enter starts a new line. A composing IME keeps Enter for itself.
-              if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+              // Desktop only: Enter asks, Shift+Enter starts a new line. A composing IME keeps
+              // Enter for itself. On mobile Enter is a new line and the send button asks.
+              if (
+                isDesktop &&
+                event.key === 'Enter' &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing
+              ) {
                 event.preventDefault();
                 onSubmit();
               }
