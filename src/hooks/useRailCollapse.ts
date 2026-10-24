@@ -25,9 +25,9 @@ const measureToggleAnchor = (): IToggleAnchor | null => {
 /**
  * Mobile only: the team overview starts inline under the brief and collapses, once, into a toggle
  * beside the greeting. This hook owns that one-way move: measuring the flight, holding the page's
- * height while the block travels, easing the scroll afterwards, and moving focus to the toggle.
+ * height while the block travels, easing the scroll afterwards, and keeping the toggle on screen.
  */
-function useRailCollapse() {
+function useRailCollapse(isDesktop: boolean) {
   const reduceMotion = useReducedMotion();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -35,6 +35,8 @@ function useRailCollapse() {
   const [toggleAnchor, setToggleAnchor] = useState<IToggleAnchor | null>(null);
   // Holds the page's height while the block flies, so the scroll position cannot snap mid-flight.
   const [spacerHeight, setSpacerHeight] = useState(0);
+  // Once the page has scrolled, content passes under the fixed toggle, so it needs a surface.
+  const [pageScrolled, setPageScrolled] = useState(false);
   // Collapsing removes the control that had focus; focus moves to the toggle once it can take it.
   const shouldFocusToggle = useRef(false);
 
@@ -101,12 +103,30 @@ function useRailCollapse() {
     // Only when the collapse happens.
   }, [isCollapsed]);
 
+  // The fixed toggle follows resizes, and picks up its surface once the page has scrolled.
+  useEffect(() => {
+    if (isDesktop || !isCollapsed) return;
+
+    const handleResize = () => setToggleAnchor(measureToggleAnchor());
+    const handleScroll = () => setPageScrolled(window.scrollY > 4);
+
+    handleScroll();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isDesktop, isCollapsed]);
+
   return {
     isCollapsed,
     collapse,
     flight,
     spacerHeight,
     toggleAnchor,
+    pageScrolled,
     settlePage,
     focusToggle,
   };
