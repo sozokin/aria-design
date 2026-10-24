@@ -75,8 +75,10 @@ const BROOKFIELD_CARD: Extract<StreamEvent, { type: 'artifact' }> = {
         evidence: 'No agreed checklist for who signs off operational readiness.',
       },
     ],
+    // Leads back to the first answer, so following next steps cycles between the two scripted
+    // answers and every question gets a reply that is about it.
     nextStep:
-      'Open the call by asking Omar who owns legal sign-off, then confirm a date for the operational walkthrough.',
+      "After the Brookfield call, review how Marcus's discovery calls are going this quarter.",
   },
 };
 
