@@ -4,7 +4,7 @@ import { Pin } from 'lucide-react';
 
 import CoachingCard from './CoachingCard';
 
-import { EASE_OUT } from '@/lib/motion';
+import { COLLAPSE_TRANSITION } from '@/lib/motion';
 
 import { IPinnedAnswer } from './AssistantExperience.types';
 
@@ -28,9 +28,9 @@ const PinnedAnswer: ReactFC<IPinnedAnswer> = ({ pinned, onUnpin, onAskNextStep }
       tabIndex={-1}
       aria-label={`Pinned AI Assistant answer: ${pinned.card.rep}, ${pinned.card.period}`}
       className="mt-7 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-      // When content above it leaves (another card unpinned), glide rather than jump.
+      // When content above it leaves (the team overview collapsing, another card unpinned), glide rather than jump.
       layout="position"
-      transition={{ layout: { duration: 0.45, ease: EASE_OUT } }}
+      transition={{ layout: COLLAPSE_TRANSITION }}
       exit={{ opacity: 0, transition: { duration: 0.18 } }}
     >
       {/* The label appears once the card has landed, so it never flies in with it. */}

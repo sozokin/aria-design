@@ -5,7 +5,7 @@
  * the widgets share, and each widget owns its own markup.
  */
 import { useRef, useState, type FC as ReactFC } from 'react';
-import { AnimatePresence, LayoutGroup } from 'motion/react';
+import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { toast } from 'sonner';
 
 import ToastProgress from '@/components/ToastProgress';
@@ -17,13 +17,14 @@ import PromptBar from '@/widgets/PromptBar';
 import Sidebar from '@/widgets/Sidebar';
 import TeamOverview from '@/widgets/TeamOverview';
 import InlineTeamOverview from '@/widgets/TeamOverview/InlineTeamOverview';
-import TeamOverviewDrawer, { RAIL_TOGGLE_ID } from '@/widgets/TeamOverview/TeamOverviewDrawer';
+import TeamOverviewDrawer from '@/widgets/TeamOverview/TeamOverviewDrawer';
 
 import useAssistant, { UNDO_WINDOW_MS } from '@/hooks/useAssistant';
 import useColumnAnchor from '@/hooks/useColumnAnchor';
 import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
 import useNeedsBarClearance from '@/hooks/useNeedsBarClearance';
 import usePanelScrollMemory from '@/hooks/usePanelScrollMemory';
+import useRailCollapse, { RAIL_TOGGLE_SLOT_ID } from '@/hooks/useRailCollapse';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_PROMPT = 'How is Marcus doing on discovery calls this quarter?';
@@ -32,6 +33,7 @@ const TODAY = 'Today · Friday, September 4';
 const App: ReactFC = () => {
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
   const assistant = useAssistant();
+  const rail = useRailCollapse();
 
   const mainRef = useRef<HTMLElement>(null);
   const mainInnerRef = useRef<HTMLDivElement>(null);
@@ -41,21 +43,6 @@ const App: ReactFC = () => {
   useNeedsBarClearance(mainRef, mainInnerRef);
 
   const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
-  // Mobile only: the team overview starts inline under the brief and collapses, once, into a
-  // toggle beside the greeting. Focus follows it there.
-  const [railIsCollapsed, setRailIsCollapsed] = useState(false);
-  const focusToggleWhenShown = useRef(false);
-
-  const collapseRail = () => {
-    focusToggleWhenShown.current = true;
-    setRailIsCollapsed(true);
-  };
-
-  const focusToggleIfJustCollapsed = () => {
-    if (!focusToggleWhenShown.current) return;
-    focusToggleWhenShown.current = false;
-    document.getElementById(RAIL_TOGGLE_ID)?.focus();
-  };
   // The bar starts empty; the opening question is offered by the brief's suggested next step chip.
   const [prompt, setPrompt] = useState('');
 
@@ -161,13 +148,18 @@ const App: ReactFC = () => {
             <div className="grid gap-x-10 gap-y-8 shell:grid-cols-[minmax(0,1fr)_17rem]">
               <div ref={columnRef} className="min-w-0">
                 <div className="greeting-row">
-                  <div className="flex w-full items-center justify-between gap-3 shell:w-auto">
-                    <h1 className="greeting">Good to see you, Jordan.</h1>
-                    {!isDesktop && railIsCollapsed && (
+                  <div
+                    id={RAIL_TOGGLE_SLOT_ID}
+                    className="flex w-full items-center justify-between gap-3 shell:w-auto"
+                  >
+                    {/* Room on the right for the fixed drawer toggle, so a long greeting never runs under it. */}
+                    <h1 className="greeting pr-10 shell:pr-0">Good to see you, Jordan.</h1>
+                    {!isDesktop && rail.isCollapsed && rail.toggleAnchor && (
                       <TeamOverviewDrawer
+                        anchor={rail.toggleAnchor}
                         pinned={assistant.pinned}
                         onJumpToPinned={jumpToPinned}
-                        onToggleShown={focusToggleIfJustCollapsed}
+                        onToggleShown={rail.focusToggle}
                       />
                     )}
                   </div>
@@ -186,13 +178,20 @@ const App: ReactFC = () => {
 
                   {/* On mobile the team overview comes first, under the brief, until it is collapsed
                       into the drawer; on desktop it is the right rail. */}
-                  {!isDesktop && !railIsCollapsed && (
-                    <InlineTeamOverview
-                      pinned={assistant.pinned}
-                      onJumpToPinned={jumpToPinned}
-                      onCollapse={collapseRail}
-                    />
-                  )}
+                  <AnimatePresence
+                    initial={false}
+                    custom={rail.flight}
+                    onExitComplete={rail.settlePage}
+                  >
+                    {!isDesktop && !rail.isCollapsed && (
+                      <InlineTeamOverview
+                        key="inline-team-overview"
+                        pinned={assistant.pinned}
+                        onJumpToPinned={jumpToPinned}
+                        onCollapse={rail.collapse}
+                      />
+                    )}
+                  </AnimatePresence>
 
                   {/* Pinned answers stack newest first; each is unpinned and undone on its own. */}
                   <AnimatePresence>
@@ -208,6 +207,14 @@ const App: ReactFC = () => {
                       />
                     ))}
                   </AnimatePresence>
+
+                  {/* Holds the page's height while the team overview flies, so the scroll never snaps. */}
+                  <motion.div
+                    aria-hidden="true"
+                    initial={false}
+                    animate={{ height: rail.spacerHeight }}
+                    transition={{ duration: 0 }}
+                  />
                 </div>
               </div>
 
