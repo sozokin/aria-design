@@ -1,8 +1,11 @@
 import { type FC as ReactFC } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 
 import EntityPreview from '@/components/EntityPreview';
 import Icons from '@/components/Icons';
 import NextStepChip from '@/widgets/AssistantExperience/NextStepChip';
+
+import { EASE_OUT } from '@/lib/motion';
 
 import { IBrief } from './Brief.types';
 
@@ -93,9 +96,20 @@ const Brief: ReactFC<IBrief> = ({ suggestedNextStep, onAskNextStep }) => (
       </li>
     </ul>
 
-    <div className="mt-1">
+    {/* Crossfades whenever a new answer brings a new next step. */}
+    <div className="mt-1" aria-live="off">
       <p className="text-xs font-semibold text-accent-muted-foreground">Suggested next step</p>
-      <NextStepChip text={suggestedNextStep} onAsk={onAskNextStep} />
+      <AnimatePresence initial={false} mode="popLayout">
+        <motion.div
+          key={suggestedNextStep}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6, transition: { duration: 0.18 } }}
+          transition={{ duration: 0.32, ease: EASE_OUT }}
+        >
+          <NextStepChip text={suggestedNextStep} onAsk={onAskNextStep} />
+        </motion.div>
+      </AnimatePresence>
     </div>
   </section>
 );
