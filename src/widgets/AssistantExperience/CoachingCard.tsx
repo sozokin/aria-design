@@ -1,4 +1,5 @@
 import { useId, type FC as ReactFC } from 'react';
+import { motion } from 'motion/react';
 import { Pin, PinOff } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import NextStepChip from './NextStepChip';
 import SkillRow from './SkillRow';
 
+import { EASE_OUT } from '@/lib/motion';
 import { groupByBand, lowestRow, RATING_BANDS } from '@/lib/rating';
 import { cn, getInitials } from '@/lib/utils';
 
@@ -14,10 +16,11 @@ import { ICoachingCard } from './AssistantExperience.types';
 /**
  * The structured answer: who it is about, a summary, the scored skills grouped by rating band, and
  * one suggested next step. The same component renders inside the panel and, once pinned, on the
- * dashboard.
+ * dashboard; the shared `layoutId` is what lets Motion fly it between the two.
  */
 const CoachingCard: ReactFC<ICoachingCard> = ({
   card,
+  layoutId,
   isPinned,
   onTogglePin,
   onAskNextStep,
@@ -28,7 +31,9 @@ const CoachingCard: ReactFC<ICoachingCard> = ({
   const lowest = lowestRow(card.rows);
 
   return (
-    <article
+    <motion.article
+      layoutId={layoutId}
+      transition={{ layout: { duration: 0.5, ease: EASE_OUT } }}
       className={cn('rounded-xl border border-border bg-card shadow-xs', className)}
       aria-labelledby={`${id}-rep`}
     >
@@ -105,7 +110,7 @@ const CoachingCard: ReactFC<ICoachingCard> = ({
         <p className="text-xs font-semibold text-accent-muted-foreground">Suggested next step</p>
         <NextStepChip text={card.nextStep} onAsk={onAskNextStep} />
       </footer>
-    </article>
+    </motion.article>
   );
 };
 

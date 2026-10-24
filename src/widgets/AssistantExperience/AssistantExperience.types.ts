@@ -59,6 +59,8 @@ export interface IStatusLine {
 
 export interface ICoachingCard {
   card: CoachingCard;
+  /** Shared-element id for the pin move. Omit to opt out of the shared transition. */
+  layoutId?: string;
   isPinned: boolean;
   onTogglePin: () => void;
   /** When given, the suggested next step becomes a button that asks it as a follow-up. */
