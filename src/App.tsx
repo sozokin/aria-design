@@ -16,6 +16,8 @@ import Brief from '@/widgets/Brief';
 import PromptBar from '@/widgets/PromptBar';
 import Sidebar from '@/widgets/Sidebar';
 import TeamOverview from '@/widgets/TeamOverview';
+import InlineTeamOverview from '@/widgets/TeamOverview/InlineTeamOverview';
+import TeamOverviewDrawer, { RAIL_TOGGLE_ID } from '@/widgets/TeamOverview/TeamOverviewDrawer';
 
 import useAssistant, { UNDO_WINDOW_MS } from '@/hooks/useAssistant';
 import useColumnAnchor from '@/hooks/useColumnAnchor';
@@ -39,6 +41,21 @@ const App: ReactFC = () => {
   useNeedsBarClearance(mainRef, mainInnerRef);
 
   const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
+  // Mobile only: the team overview starts inline under the brief and collapses, once, into a
+  // toggle beside the greeting. Focus follows it there.
+  const [railIsCollapsed, setRailIsCollapsed] = useState(false);
+  const focusToggleWhenShown = useRef(false);
+
+  const collapseRail = () => {
+    focusToggleWhenShown.current = true;
+    setRailIsCollapsed(true);
+  };
+
+  const focusToggleIfJustCollapsed = () => {
+    if (!focusToggleWhenShown.current) return;
+    focusToggleWhenShown.current = false;
+    document.getElementById(RAIL_TOGGLE_ID)?.focus();
+  };
   // The bar starts empty; the opening question is offered by the brief's suggested next step chip.
   const [prompt, setPrompt] = useState('');
 
@@ -144,7 +161,16 @@ const App: ReactFC = () => {
             <div className="grid gap-x-10 gap-y-8 shell:grid-cols-[minmax(0,1fr)_17rem]">
               <div ref={columnRef} className="min-w-0">
                 <div className="greeting-row">
-                  <h1 className="greeting">Good to see you, Jordan.</h1>
+                  <div className="flex w-full items-center justify-between gap-3 shell:w-auto">
+                    <h1 className="greeting">Good to see you, Jordan.</h1>
+                    {!isDesktop && railIsCollapsed && (
+                      <TeamOverviewDrawer
+                        pinned={assistant.pinned}
+                        onJumpToPinned={jumpToPinned}
+                        onToggleShown={focusToggleIfJustCollapsed}
+                      />
+                    )}
+                  </div>
                   <p className="date-eyebrow shell:hidden">{TODAY}</p>
                 </div>
 
@@ -158,15 +184,14 @@ const App: ReactFC = () => {
                     }}
                   />
 
-                  {/* On mobile the team overview sits under the brief; on desktop it is the right rail. */}
-                  {!isDesktop && (
-                    <div className="section flex flex-col gap-6">
-                      <TeamOverview
-                        pinned={assistant.pinned}
-                        onJumpToPinned={jumpToPinned}
-                        variant="inline"
-                      />
-                    </div>
+                  {/* On mobile the team overview comes first, under the brief, until it is collapsed
+                      into the drawer; on desktop it is the right rail. */}
+                  {!isDesktop && !railIsCollapsed && (
+                    <InlineTeamOverview
+                      pinned={assistant.pinned}
+                      onJumpToPinned={jumpToPinned}
+                      onCollapse={collapseRail}
+                    />
                   )}
 
                   {/* Pinned answers stack newest first; each is unpinned and undone on its own. */}
