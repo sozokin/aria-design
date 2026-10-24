@@ -20,6 +20,8 @@ export interface IInlineTeamOverview extends Omit<ITeamOverview, 'variant'> {
 
 export interface ITeamOverviewDrawer extends Omit<ITeamOverview, 'variant'> {
   anchor: IToggleAnchor;
+  /** The page has scrolled, so content passes under the toggle and it needs a surface. */
+  surfaced: boolean;
   /** Fires once the toggle has faded in, so focus can move to it. */
   onToggleShown: () => void;
 }

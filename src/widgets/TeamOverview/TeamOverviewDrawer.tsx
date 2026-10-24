@@ -15,6 +15,7 @@ import TeamOverview from '.';
 
 import { RAIL_TOGGLE_ID } from '@/hooks/useRailCollapse';
 import { COLLAPSE_TRANSITION, EASE_OUT } from '@/lib/motion';
+import { cn } from '@/lib/utils';
 
 import { ITeamOverviewDrawer } from './TeamOverview.types';
 
@@ -29,6 +30,7 @@ const RING_DURATION = 0.5;
  */
 const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
   anchor,
+  surfaced,
   pinned,
   onJumpToPinned,
   onToggleShown,
@@ -86,7 +88,10 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
               type="button"
               variant="ghost"
               size="icon-sm"
-              className="relative shrink-0 text-text-secondary"
+              className={cn(
+                'relative text-text-secondary transition-[background-color,box-shadow] duration-200',
+                surfaced ? 'bg-popover shadow-sm ring-1 ring-border' : '',
+              )}
               aria-label={toggleLabel}
             >
               <PanelRightOpen aria-hidden="true" />

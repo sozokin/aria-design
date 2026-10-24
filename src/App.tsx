@@ -33,7 +33,7 @@ const TODAY = 'Today · Friday, September 4';
 const App: ReactFC = () => {
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
   const assistant = useAssistant();
-  const rail = useRailCollapse();
+  const rail = useRailCollapse(isDesktop);
 
   const mainRef = useRef<HTMLElement>(null);
   const mainInnerRef = useRef<HTMLDivElement>(null);
@@ -157,6 +157,7 @@ const App: ReactFC = () => {
                     {!isDesktop && rail.isCollapsed && rail.toggleAnchor && (
                       <TeamOverviewDrawer
                         anchor={rail.toggleAnchor}
+                        surfaced={rail.pageScrolled}
                         pinned={assistant.pinned}
                         onJumpToPinned={jumpToPinned}
                         onToggleShown={rail.focusToggle}
