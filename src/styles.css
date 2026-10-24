@@ -276,7 +276,10 @@ svg { flex: none; }
 /* Responsive */
 @media (max-width: 760px) {
   :root { --sidebar-w: 0rem; }
-  .app-shell { grid-template-columns: 1fr; }
+  /* Explicit rows: the top bar keeps its own height and the main area takes the rest. With only
+     auto rows, a page shorter than the screen (the overview collapsed, nothing pinned) shares the
+     leftover height between every row, and the top bar balloons. */
+  .app-shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .sidebar {
     position: sticky; top: 0; height: auto; z-index: 10;
     flex-direction: row; align-items: center; gap: 0.5rem; padding: 0.625rem 0.875rem;
