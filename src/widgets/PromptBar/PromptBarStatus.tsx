@@ -5,18 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { IPromptBarStatus } from './PromptBar.types';
 
 /**
- * A small status inside the prompt bar while the panel is closed: a pulsing dot while an answer is
- * being worked on, an "Answer ready" pill when one finished behind the closed panel. Nothing while
- * the panel is open, so the input keeps its full width.
+ * A small status inside the prompt bar for an answer the reader is not looking at, behind a closed
+ * panel or in another chat: a pulsing dot while it is being worked on, an "Answer ready" pill once
+ * it has arrived. Either shows that answer. Nothing otherwise, so the field keeps its full width.
  */
-const PromptBarStatus: ReactFC<IPromptBarStatus> = ({
-  latestTurn,
-  isPanelOpen,
-  hasUnseenAnswer,
-  onReopen,
-}) => {
-  if (!latestTurn || isPanelOpen) return null;
-
+const PromptBarStatus: ReactFC<IPromptBarStatus> = ({ isAnswering, hasUnseenAnswer, onReopen }) => {
   if (hasUnseenAnswer) {
     return (
       <span className="relative shrink-0">
@@ -43,7 +36,7 @@ const PromptBarStatus: ReactFC<IPromptBarStatus> = ({
     );
   }
 
-  if (latestTurn.phase !== 'complete') {
+  if (isAnswering) {
     return (
       <button
         type="button"

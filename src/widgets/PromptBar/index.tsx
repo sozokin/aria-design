@@ -58,8 +58,8 @@ const PromptBar: ReactFC<IPromptBar> = ({
   onInteract,
   hasThread,
   anchor,
-  latestTurn,
   isPanelOpen,
+  isAnswering,
   hasUnseenAnswer,
   onReopen,
   onNewChat,
@@ -173,8 +173,7 @@ const PromptBar: ReactFC<IPromptBar> = ({
           {hasThread ? 'Ask AI Assistant a follow-up' : 'Ask AI Assistant anything'}
         </label>
         <PromptBarStatus
-          latestTurn={latestTurn}
-          isPanelOpen={isPanelOpen}
+          isAnswering={isAnswering}
           hasUnseenAnswer={hasUnseenAnswer}
           onReopen={onReopen}
         />

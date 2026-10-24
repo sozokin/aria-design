@@ -15,6 +15,7 @@ export function chatSummaries(turns: ITurn[]): IChatSummary[] {
       title: previous?.title ?? turn.prompt,
       turnCount: (previous?.turnCount ?? 0) + 1,
       rep: turn.card?.rep ?? previous?.rep ?? null,
+      isAnswering: (previous?.isAnswering ?? false) || turn.phase !== 'complete',
     });
   }
   return [...summaries.values()].reverse();

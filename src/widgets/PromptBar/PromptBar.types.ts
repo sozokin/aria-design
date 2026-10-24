@@ -1,17 +1,20 @@
 import type { Ref } from 'react';
 
-import type { ITurn } from '@/types/assistant.types';
 import type { IColumnAnchor } from '@/types/layout.types';
 
 export interface IPromptBarStatus {
-  latestTurn: ITurn | undefined;
-  isPanelOpen: boolean;
+  /** An answer is arriving where the reader is not looking. */
+  isAnswering: boolean;
+  /** An answer finished out of view and has not been looked at. */
   hasUnseenAnswer: boolean;
+  /** Shows that answer. */
   onReopen: () => void;
 }
 
 export interface IPromptBar extends IPromptBarStatus {
   ref: Ref<HTMLTextAreaElement>;
+  /** Whether the panel is showing: with an empty bar the send arrow closes it rather than opens it. */
+  isPanelOpen: boolean;
   value: string;
   onValueChange: (value: string) => void;
   onSubmit: () => void;

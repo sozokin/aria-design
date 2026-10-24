@@ -1,19 +1,25 @@
 import { describe, expect, it } from 'vitest';
 
 import { chatSummaries } from './chats';
-import { createTurn } from './stream';
+import { applyEvent, createTurn } from './stream';
 
 const CARD = { rep: 'Marcus Bell', period: 'Q3', summary: '', rows: [], nextStep: '' };
+const done = (turn: ReturnType<typeof createTurn>) => applyEvent(turn, { type: 'done' });
 
 describe('chatSummaries', () => {
   it('titles each chat with its first question and counts the rest', () => {
     const turns = [
-      createTurn('t1', 'c1', 'How is Marcus doing?'),
-      createTurn('t2', 'c1', 'And Lena?'),
+      done(createTurn('t1', 'c1', 'How is Marcus doing?')),
+      done(createTurn('t2', 'c1', 'And Lena?')),
     ];
     expect(chatSummaries(turns)).toEqual([
-      { id: 'c1', title: 'How is Marcus doing?', turnCount: 2, rep: null },
+      { id: 'c1', title: 'How is Marcus doing?', turnCount: 2, rep: null, isAnswering: false },
     ]);
+  });
+
+  it('marks a chat as answering while any of its turns is still streaming', () => {
+    const turns = [done(createTurn('t1', 'c1', 'First')), createTurn('t2', 'c1', 'Second')];
+    expect(chatSummaries(turns)[0].isAnswering).toBe(true);
   });
 
   it('names the rep from the latest card', () => {
