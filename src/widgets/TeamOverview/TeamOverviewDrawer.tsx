@@ -11,6 +11,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import ChatHistory from '@/widgets/AssistantExperience/ChatHistory';
 import TeamOverview from '.';
 
 import { RAIL_TOGGLE_ID } from '@/hooks/useRailCollapse';
@@ -24,16 +25,20 @@ const RING_DELAY = COLLAPSE_TRANSITION.duration - 0.1;
 const RING_DURATION = 0.5;
 
 /**
- * Where the team overview lives on mobile once it has collapsed: a toggle fixed beside the
- * greeting that opens the overview in a sheet from the right. The toggle appears as the collapsing
- * block lands on it, with a ring pulsing out to mark where the block went.
+ * The mobile dashboard menu: a toggle fixed beside the greeting that opens, in a sheet from the
+ * right, what the desktop right rail shows: the date, chat history, the team overview and the
+ * pinned answers. The inline team overview collapses into this toggle, and a ring pulses out as
+ * the block lands to mark where it went.
  */
 const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
   anchor,
   surfaced,
+  collapsed,
   pinned,
   onJumpToPinned,
-  onToggleShown,
+  chats,
+  activeChatId,
+  onSwitchChat,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   // A pinned card chosen inside the sheet is jumped to once the sheet has closed.
@@ -42,92 +47,101 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
   const pinnedCount = pinned.length;
   const toggleLabel =
     pinnedCount > 0
-      ? `Open team overview, ${pinnedCount} pinned ${pinnedCount === 1 ? 'answer' : 'answers'}`
-      : 'Open team overview';
+      ? `Open dashboard menu, ${pinnedCount} pinned ${pinnedCount === 1 ? 'answer' : 'answers'}`
+      : 'Open dashboard menu';
 
   const jumpAfterClose = (turnId: string) => {
     pendingJump.current = turnId;
     setIsOpen(false);
   };
 
+  // A chat chosen in the history sheet inside this one: both close, so the panel showing it is in view.
+  const switchAndClose = (chatId: string) => {
+    setIsOpen(false);
+    onSwitchChat(chatId);
+  };
+
   return (
-    <motion.div className="fixed z-[8] rounded-lg" style={{ top: anchor.top, right: anchor.right }}>
+    <div className="fixed z-[8] rounded-lg" style={{ top: anchor.top, right: anchor.right }}>
       {/* The ring that pulses out as the block lands. */}
-      <motion.span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-lg bg-accent-muted ring-[3px] ring-accent"
-        initial={{ opacity: 0, scale: 1 }}
-        // The scale is one segment, so its ease-out decelerates once and never stalls and restarts
-        // (easing over several keyframes applies per segment). The opacity starts at 0, because a
-        // keyframe array shows its first value during the delay, steps to 0.8 the moment the block
-        // lands, then eases out to nothing.
-        animate={{ opacity: [0, 0.8, 0], scale: 2.4 }}
-        transition={{
-          delay: RING_DELAY,
-          duration: RING_DURATION,
-          ease: EASE_OUT,
-          opacity: {
+      {collapsed && (
+        <motion.span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-lg bg-accent-muted ring-[3px] ring-accent"
+          initial={{ opacity: 0, scale: 1 }}
+          // The scale is one segment, so its ease-out decelerates once and never stalls and restarts
+          // (easing over several keyframes applies per segment). The opacity starts at 0, because a
+          // keyframe array shows its first value during the delay, steps to 0.8 the moment the block
+          // lands, then eases out to nothing.
+          animate={{ opacity: [0, 0.8, 0], scale: 2.4 }}
+          transition={{
             delay: RING_DELAY,
             duration: RING_DURATION,
-            times: [0, 0.02, 1],
             ease: EASE_OUT,
-          },
-        }}
-      />
-      {/* The icon waits until the collapsing block has almost arrived, so it does not scale down with it. */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: COLLAPSE_TRANSITION.duration * 0.6, duration: 0.3 }}
-        onAnimationComplete={onToggleShown}
-      >
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild>
-            <Button
-              id={RAIL_TOGGLE_ID}
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className={cn(
-                'relative text-text-secondary transition-[background-color,box-shadow] duration-200',
-                surfaced ? 'bg-popover shadow-sm ring-1 ring-border' : '',
-              )}
-              aria-label={toggleLabel}
-            >
-              <PanelRightOpen aria-hidden="true" />
-              {pinnedCount > 0 && (
-                <span
-                  className="absolute top-1 right-1 size-1.5 rounded-full bg-accent"
-                  aria-hidden="true"
-                />
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent
-            side="right"
-            // The same data-[side] selector as the sheet's default width, so this one can override it.
-            className="overflow-y-auto data-[side=right]:w-[min(22rem,88vw)]"
-            aria-describedby={undefined}
-            onCloseAutoFocus={event => {
-              const turnId = pendingJump.current;
-              if (!turnId) return;
-              // Land on the card instead of back on the toggle.
-              event.preventDefault();
-              pendingJump.current = null;
-              onJumpToPinned(turnId);
-            }}
+            opacity: {
+              delay: RING_DELAY,
+              duration: RING_DURATION,
+              times: [0, 0.02, 1],
+              ease: EASE_OUT,
+            },
+          }}
+        />
+      )}
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetTrigger asChild>
+          <Button
+            id={RAIL_TOGGLE_ID}
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className={cn(
+              'relative text-text-secondary transition-[background-color,box-shadow] duration-200',
+              surfaced ? 'bg-popover shadow-sm ring-1 ring-border' : '',
+            )}
+            aria-label={toggleLabel}
           >
-            <SheetHeader className="pb-0">
-              <SheetTitle className="sr-only">Dashboard</SheetTitle>
-              <SheetDescription>Today · Friday, September 4</SheetDescription>
-            </SheetHeader>
-            <div className="flex flex-col gap-6 px-4 pb-6">
-              <TeamOverview pinned={pinned} onJumpToPinned={jumpAfterClose} variant="drawer" />
+            <PanelRightOpen aria-hidden="true" />
+            {pinnedCount > 0 && (
+              <span
+                className="absolute top-1 right-1 size-1.5 rounded-full bg-accent"
+                aria-hidden="true"
+              />
+            )}
+          </Button>
+        </SheetTrigger>
+        <SheetContent
+          side="right"
+          // The same data-[side] selector as the sheet's default width, so this one can override it.
+          className="overflow-y-auto data-[side=right]:w-[min(22rem,88vw)]"
+          aria-describedby={undefined}
+          onCloseAutoFocus={event => {
+            const turnId = pendingJump.current;
+            if (!turnId) return;
+            // Land on the card instead of back on the toggle.
+            event.preventDefault();
+            pendingJump.current = null;
+            onJumpToPinned(turnId);
+          }}
+        >
+          <SheetHeader className="pb-0">
+            <SheetTitle className="sr-only">Dashboard</SheetTitle>
+            <SheetDescription>Today · Friday, September 4</SheetDescription>
+          </SheetHeader>
+          <div className="flex flex-col gap-6 px-4 pb-6">
+            {/* The desktop rail's order: the date above, chat history under it, then the overview. */}
+            <div className="-mt-2.5 flex justify-end">
+              <ChatHistory
+                chats={chats}
+                activeChatId={activeChatId}
+                onSwitchChat={switchAndClose}
+                withLabel
+              />
             </div>
-          </SheetContent>
-        </Sheet>
-      </motion.div>
-    </motion.div>
+            <TeamOverview pinned={pinned} onJumpToPinned={jumpAfterClose} variant="drawer" />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 };
 

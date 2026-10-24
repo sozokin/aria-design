@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { animate, useReducedMotion } from 'motion/react';
 
 import { COLLAPSE_TRANSITION } from '@/lib/motion';
@@ -23,9 +23,11 @@ const measureToggleAnchor = (): IToggleAnchor | null => {
 };
 
 /**
- * Mobile only: the team overview starts inline under the brief and collapses, once, into a toggle
- * beside the greeting. This hook owns that one-way move: measuring the flight, holding the page's
- * height while the block travels, easing the scroll afterwards, and keeping the toggle on screen.
+ * Mobile only: the dashboard menu's toggle sits beside the greeting from the start, and the team
+ * overview also starts inline under the brief. Collapsing the inline block is a one-way move into
+ * that toggle. This hook keeps the toggle placed and owns the move: measuring the flight, holding
+ * the page's height while the block travels, easing the scroll afterwards, and moving focus to the
+ * toggle once the block, and the Collapse button that had focus, are gone.
  */
 function useRailCollapse(isDesktop: boolean) {
   const reduceMotion = useReducedMotion();
@@ -37,8 +39,6 @@ function useRailCollapse(isDesktop: boolean) {
   const [spacerHeight, setSpacerHeight] = useState(0);
   // Once the page has scrolled, content passes under the fixed toggle, so it needs a surface.
   const [pageScrolled, setPageScrolled] = useState(false);
-  // Collapsing removes the control that had focus; focus moves to the toggle once it can take it.
-  const shouldFocusToggle = useRef(false);
 
   const collapse = () => {
     const block = document.getElementById(MOBILE_RAIL_ID);
@@ -63,7 +63,6 @@ function useRailCollapse(isDesktop: boolean) {
       });
     }
 
-    shouldFocusToggle.current = true;
     setIsCollapsed(true);
   };
 
@@ -88,28 +87,28 @@ function useRailCollapse(isDesktop: boolean) {
     });
   };
 
-  // The toggle fades in late, so the attempt on mount covers reduced motion and the attempt after
-  // its fade covers the rest.
-  const focusToggle = () => {
-    if (!shouldFocusToggle.current) return;
-
-    const toggle = document.getElementById(RAIL_TOGGLE_ID);
-    toggle?.focus({ preventScroll: true });
-    if (toggle && document.activeElement === toggle) shouldFocusToggle.current = false;
-  };
-
+  // Collapsing removes the control that had focus; it moves to the toggle the block flew into.
   useEffect(() => {
-    if (isCollapsed) window.requestAnimationFrame(focusToggle);
-    // Only when the collapse happens.
+    if (!isCollapsed) return;
+
+    const frame = window.requestAnimationFrame(() =>
+      document.getElementById(RAIL_TOGGLE_ID)?.focus({ preventScroll: true }),
+    );
+    return () => window.cancelAnimationFrame(frame);
   }, [isCollapsed]);
 
-  // The fixed toggle follows resizes, and picks up its surface once the page has scrolled.
-  useEffect(() => {
-    if (isDesktop || !isCollapsed) return;
+  // The toggle is placed before first paint, follows resizes, and picks up its surface once the
+  // page has scrolled.
+  useLayoutEffect(() => {
+    if (isDesktop) {
+      setToggleAnchor(null);
+      return;
+    }
 
     const handleResize = () => setToggleAnchor(measureToggleAnchor());
     const handleScroll = () => setPageScrolled(window.scrollY > 4);
 
+    handleResize();
     handleScroll();
     window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -118,7 +117,7 @@ function useRailCollapse(isDesktop: boolean) {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [isDesktop, isCollapsed]);
+  }, [isDesktop]);
 
   return {
     isCollapsed,
@@ -128,7 +127,6 @@ function useRailCollapse(isDesktop: boolean) {
     toggleAnchor,
     pageScrolled,
     settlePage,
-    focusToggle,
   };
 }
 
