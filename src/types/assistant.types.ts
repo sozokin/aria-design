@@ -53,7 +53,8 @@ export interface IAssistant {
   hasUnseenAnswer: boolean;
   /**
    * The latest message for screen readers: the status, then "Answer ready" with a summary of the
-   * card. Text chunks are deliberately not announced. Null until something happens.
+   * card, and pin and undo. Text chunks are deliberately not announced, and unpin is left to its
+   * toast. Null until something happens.
    */
   announcement: IAnnouncement | null;
   /**

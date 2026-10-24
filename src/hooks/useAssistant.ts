@@ -123,9 +123,8 @@ function useAssistant(): IAssistant {
       timer: window.setTimeout(() => undoable.current.delete(turnId), UNDO_WINDOW_MS),
     });
     setPinned(current => current.filter(entry => entry.turnId !== turnId));
-    announce(
-      `Coaching card removed from your dashboard. Undo is available for ${UNDO_WINDOW_MS / 1000} seconds.`,
-    );
+    // Not announced here: the host's undo toast is a live region of its own and says it, with the
+    // time limit, so a second announcement would only repeat it.
   };
 
   // Puts one unpinned card back where it was, if its undo window is still open. The updater reads

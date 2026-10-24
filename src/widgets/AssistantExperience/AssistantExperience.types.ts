@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import type { CoachingCard, CoachingRow } from '../../../mock/types';
-import type { IPinnedTurn, ITurn } from '@/types/assistant.types';
+import type { IAnnouncement, IPinnedTurn, ITurn } from '@/types/assistant.types';
 import type { IColumnAnchor } from '@/types/layout.types';
 
 export interface IAssistantPanel {
@@ -89,4 +89,8 @@ export interface IPinnedAnswer {
   pinned: IPinnedTurn;
   onUnpin: () => void;
   onAskNextStep: (question: string) => void;
+}
+
+export interface ILiveAnnouncer {
+  announcement: IAnnouncement | null;
 }
