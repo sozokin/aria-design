@@ -5,25 +5,28 @@ import EntityPreview from '@/components/EntityPreview';
 import Icons from '@/components/Icons';
 import NextStepChip from '@/widgets/AssistantExperience/NextStepChip';
 
-import { EASE_OUT } from '@/lib/motion';
+import { EASE_OUT, LOAD_IN, loadIn } from '@/lib/motion';
 
 import { IBrief } from './Brief.types';
 
 /**
  * Jordan's morning brief, as the shell provides it, plus a "Suggested next step" chip that
- * mirrors the latest coaching card's next step and asks it when clicked.
+ * mirrors the latest coaching card's next step and asks it when clicked. On first paint its lines
+ * fade in top to bottom, after the greeting (LOAD_IN).
  */
+const line = (index: number) => loadIn(LOAD_IN.brief + index * LOAD_IN.step);
+
 const Brief: ReactFC<IBrief> = ({ suggestedNextStep, onAskNextStep }) => (
   <section className="brief" aria-labelledby="brief-title">
     <h2 id="brief-title" className="sr-only">
       Today's brief
     </h2>
-    <p className="brief-lead">
+    <motion.p className="brief-lead" {...line(0)}>
       Your morning brief has <strong>three coaching moments</strong> and{' '}
       <strong>two deal follow-ups</strong> across the team.
-    </p>
+    </motion.p>
     <ul className="brief-points">
-      <li>
+      <motion.li {...line(1)}>
         <b>Coaching.</b>{' '}
         <EntityPreview
           id="marcus-preview"
@@ -55,8 +58,8 @@ const Brief: ReactFC<IBrief> = ({ suggestedNextStep, onAskNextStep }) => (
           </span>
         </EntityPreview>
         {', Lena Ortiz, and Didi Rao each have recent calls ready for review.'}
-      </li>
-      <li>
+      </motion.li>
+      <motion.li {...line(2)}>
         <b>Deals.</b>{' '}
         <EntityPreview
           id="brookfield-preview"
@@ -93,11 +96,11 @@ const Brief: ReactFC<IBrief> = ({ suggestedNextStep, onAskNextStep }) => (
           </span>
         </EntityPreview>{' '}
         enters security review today; Percepto has a pricing follow-up Friday.
-      </li>
+      </motion.li>
     </ul>
 
     {/* Crossfades whenever a new answer brings a new next step. */}
-    <div className="mt-1" aria-live="off">
+    <motion.div className="mt-1" aria-live="off" {...line(3)}>
       <p className="text-xs font-semibold text-accent-muted-foreground">Suggested next step</p>
       <AnimatePresence initial={false} mode="popLayout">
         <motion.div
@@ -110,7 +113,7 @@ const Brief: ReactFC<IBrief> = ({ suggestedNextStep, onAskNextStep }) => (
           <NextStepChip text={suggestedNextStep} onAsk={onAskNextStep} />
         </motion.div>
       </AnimatePresence>
-    </div>
+    </motion.div>
   </section>
 );
 

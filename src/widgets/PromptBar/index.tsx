@@ -5,6 +5,7 @@ import PromptBarStatus from './PromptBarStatus';
 
 import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
 import useTextLines from '@/hooks/useTextLines';
+import { LOAD_IN } from '@/lib/motion';
 
 import { IPromptBar } from './PromptBar.types';
 
@@ -163,7 +164,12 @@ const PromptBar: ReactFC<IPromptBar> = ({
         aria-label="Ask AI Assistant"
         data-with-plus={showsNewChat}
         data-gliding={isGliding}
-        style={barCenter !== null ? { left: barCenter, width: barWidth ?? undefined } : undefined}
+        style={{
+          // First paint: the bar rises last (styles.css, bar-rise).
+          animationDelay: `${LOAD_IN.hero}s`,
+          animationDuration: `${LOAD_IN.duration}s`,
+          ...(barCenter !== null ? { left: barCenter, width: barWidth ?? undefined } : {}),
+        }}
         onSubmit={event => {
           event.preventDefault();
           onSubmit();
