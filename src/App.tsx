@@ -5,7 +5,7 @@
  * the widgets share, and each widget owns its own markup.
  */
 import { useRef, useState, type FC as ReactFC } from 'react';
-import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 
 import ToastProgress from '@/components/ToastProgress';
@@ -33,6 +33,7 @@ const TODAY = 'Today · Friday, September 4';
 
 const App: ReactFC = () => {
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
+  const reduceMotion = useReducedMotion();
   const assistant = useAssistant();
   const rail = useRailCollapse(isDesktop);
 
@@ -133,7 +134,8 @@ const App: ReactFC = () => {
 
   const jumpToPinned = (turnId: string) => {
     const card = document.getElementById(pinnedAnswerId(turnId));
-    card?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    // An explicit 'smooth' overrides the CSS scroll-behavior that reduced motion turns off.
+    card?.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
     card?.focus({ preventScroll: true });
   };
 
