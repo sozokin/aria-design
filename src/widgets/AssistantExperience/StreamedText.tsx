@@ -1,12 +1,25 @@
 import { type FC as ReactFC } from 'react';
+import { motion } from 'motion/react';
+
+import { EASE_OUT } from '@/lib/motion';
 
 import { IStreamedText } from './AssistantExperience.types';
 
-/** The answer text as it arrives, one span per chunk. A caret marks that more is coming. */
+/**
+ * The answer text as it arrives. Each chunk is laid out first, so the paragraph takes its space at
+ * once, and then fades in from transparent. A caret marks that more is coming.
+ */
 const StreamedText: ReactFC<IStreamedText> = ({ deltas, streaming }) => (
   <p className="text-sm leading-relaxed">
     {deltas.map((delta, index) => (
-      <span key={index}>{delta}</span>
+      <motion.span
+        key={index}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, ease: EASE_OUT }}
+      >
+        {delta}
+      </motion.span>
     ))}
     {streaming && (
       <span

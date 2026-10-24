@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import type { CoachingCard, CoachingRow } from '../../../mock/types';
 import type { IPinnedTurn, ITurn } from '@/types/assistant.types';
 import type { IColumnAnchor } from '@/types/layout.types';
@@ -36,6 +38,13 @@ export interface IAnswerTurn {
   isPinned: boolean;
   onTogglePin: () => void;
   onAskNextStep: (question: string) => void;
+}
+
+export interface IReveal {
+  ready: boolean;
+  skeleton: ReactNode;
+  className?: string;
+  children: ReactNode;
 }
 
 export interface IStreamedText {
