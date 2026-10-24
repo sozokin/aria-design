@@ -1,5 +1,4 @@
 import { type FC as ReactFC } from 'react';
-import { Check } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -11,7 +10,7 @@ const chatSubtitle = ({ turnCount, rep }: IChatSummary) =>
 
 /**
  * Every chat so far, most recently asked first, each a button that switches to it; the active one
- * is marked. Shared by the history sheet and the expanded panel's left pane.
+ * is highlighted. Shared by the history sheet and the expanded panel's left pane.
  */
 const ChatList: ReactFC<IChatList> = ({ chats, activeChatId, onSwitchChat }) => {
   if (chats.length === 0) {
@@ -58,12 +57,6 @@ const ChatList: ReactFC<IChatList> = ({ chats, activeChatId, onSwitchChat }) => 
                   {chatSubtitle(chat)}
                 </span>
               </span>
-              {isActive && (
-                <Check
-                  className="size-4 shrink-0 text-accent-muted-foreground"
-                  aria-hidden="true"
-                />
-              )}
             </button>
           </li>
         );
