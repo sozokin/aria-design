@@ -8,6 +8,9 @@ import {
 } from 'lucide-react';
 
 // The shell ships a light theme only, so the theme is fixed rather than read from next-themes.
+// Toasts sit on a white dashboard over white cards, so they take the surface tone and the ring's
+// blue as a border to stand apart from it, with the action in solid info; the text keeps the
+// popover's dark foreground.
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
@@ -22,15 +25,17 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          '--normal-bg': 'var(--popover)',
+          '--normal-bg': 'var(--surface)',
           '--normal-text': 'var(--popover-foreground)',
-          '--normal-border': 'var(--border)',
+          '--normal-border': 'var(--ring)',
           '--border-radius': 'var(--radius)',
         } as React.CSSProperties
       }
       toastOptions={{
         classNames: {
           toast: 'cn-toast',
+          // Important: sonner's own rule paints the action in the toast's text colour.
+          actionButton: 'bg-info! text-white!',
         },
       }}
       {...props}
