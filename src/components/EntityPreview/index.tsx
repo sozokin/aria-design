@@ -1,26 +1,29 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FC as ReactFC,
+} from 'react';
 import { createPortal } from 'react-dom';
 
-type EntityPreviewProps = {
-  id: string;
-  label: ReactNode;
-  children: ReactNode;
-};
-
-type PreviewPosition = {
-  left: number;
-  top: number;
-  ready: boolean;
-};
+import { IEntityPreview, IPreviewPosition } from './EntityPreview.types';
 
 const VIEWPORT_GUTTER = 16;
 const PREVIEW_GAP = 8;
 
-export function EntityPreview({ id, label, children }: EntityPreviewProps) {
+/**
+ * A chip in the brief (a rep, a deal) that shows a small preview card on hover, focus or tap. The
+ * card is portalled to the body and placed below the chip, or above it when there is no room.
+ */
+const EntityPreview: ReactFC<IEntityPreview> = ({ id, label, children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState<PreviewPosition>({ left: 0, top: 0, ready: false });
+  const [position, setPosition] = useState<IPreviewPosition>({ left: 0, top: 0, ready: false });
+
   const triggerRef = useRef<HTMLButtonElement>(null);
   const previewRef = useRef<HTMLSpanElement>(null);
+  // Leaving the chip closes the card after a short grace period, so the pointer can cross to it.
   const closeTimerRef = useRef<number | null>(null);
 
   const cancelClose = useCallback(() => {
@@ -49,16 +52,18 @@ export function EntityPreview({ id, label, children }: EntityPreviewProps) {
   const updatePosition = useCallback(() => {
     const trigger = triggerRef.current;
     const preview = previewRef.current;
-
     if (!trigger || !preview) return;
 
     const triggerRect = trigger.getBoundingClientRect();
     const previewRect = preview.getBoundingClientRect();
+
+    // Keep the card inside the viewport's gutters horizontally.
     const maxLeft = Math.max(
       VIEWPORT_GUTTER,
       window.innerWidth - previewRect.width - VIEWPORT_GUTTER,
     );
     const left = Math.min(Math.max(VIEWPORT_GUTTER, triggerRect.left), maxLeft);
+
     const fitsBelow =
       triggerRect.bottom + PREVIEW_GAP + previewRect.height <= window.innerHeight - VIEWPORT_GUTTER;
     const top = fitsBelow
@@ -68,6 +73,7 @@ export function EntityPreview({ id, label, children }: EntityPreviewProps) {
     setPosition({ left, top, ready: true });
   }, []);
 
+  // Place the card as soon as it renders, and keep it placed while the page moves.
   useLayoutEffect(() => {
     if (!isOpen) return;
 
@@ -81,14 +87,15 @@ export function EntityPreview({ id, label, children }: EntityPreviewProps) {
     };
   }, [isOpen, updatePosition]);
 
+  // A tap or click anywhere else closes it.
   useEffect(() => {
     if (!isOpen) return;
 
     const handleOutsidePointer = (event: PointerEvent) => {
       const target = event.target as Node;
-      if (!triggerRef.current?.contains(target) && !previewRef.current?.contains(target)) {
-        closePreview();
-      }
+      const insideTrigger = triggerRef.current?.contains(target);
+      const insidePreview = previewRef.current?.contains(target);
+      if (!insideTrigger && !insidePreview) closePreview();
     };
 
     document.addEventListener('pointerdown', handleOutsidePointer);
@@ -118,23 +125,24 @@ export function EntityPreview({ id, label, children }: EntityPreviewProps) {
         {label}
       </button>
 
-      {isOpen
-        ? createPortal(
-            <span
-              ref={previewRef}
-              className="hover-card"
-              id={id}
-              role="tooltip"
-              data-ready={position.ready}
-              style={{ left: position.left, top: position.top }}
-              onPointerEnter={cancelClose}
-              onPointerLeave={scheduleClose}
-            >
-              {children}
-            </span>,
-            document.body,
-          )
-        : null}
+      {isOpen &&
+        createPortal(
+          <span
+            ref={previewRef}
+            className="hover-card"
+            id={id}
+            role="tooltip"
+            data-ready={position.ready}
+            style={{ left: position.left, top: position.top }}
+            onPointerEnter={cancelClose}
+            onPointerLeave={scheduleClose}
+          >
+            {children}
+          </span>,
+          document.body,
+        )}
     </span>
   );
-}
+};
+
+export default EntityPreview;

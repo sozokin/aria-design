@@ -8,8 +8,8 @@
  */
 import { useRef, useState, type CSSProperties } from 'react';
 import { AssistantExperience } from './AssistantExperience';
-import { EntityPreview } from './EntityPreview';
-import { Icons } from './icons';
+import EntityPreview from '@/components/EntityPreview';
+import Icons from '@/components/Icons';
 
 export const DEFAULT_PROMPT = 'How is Marcus doing on discovery calls this quarter?';
 
