@@ -60,7 +60,7 @@ const App: ReactFC = () => {
   const [panelTakesFocus, setPanelTakesFocus] = useState(true);
   // Focus the app itself returns to the input (after a close) must not reopen the panel.
   const suppressFocusOpen = useRef(false);
-  const panelScroll = usePanelScrollMemory(assistant.turns.length);
+  const panelScroll = usePanelScrollMemory(`${assistant.activeChatId}:${assistant.turns.length}`);
 
   const askWithFocus = (question: string) => {
     setPanelTakesFocus(true);

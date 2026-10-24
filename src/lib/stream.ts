@@ -1,8 +1,9 @@
 import type { StreamEvent } from '../../mock/types';
 import type { ITurn } from '@/types/assistant.types';
 
-export const createTurn = (id: string, prompt: string): ITurn => ({
+export const createTurn = (id: string, chatId: string, prompt: string): ITurn => ({
   id,
+  chatId,
   prompt,
   phase: 'reviewing',
   status: '',
