@@ -4,6 +4,7 @@ import { Sparkles, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import AnswerTurn from './AnswerTurn';
+import NextStepChip from './NextStepChip';
 
 import useElementHeight from '@/hooks/useElementHeight';
 import useHasMoreBelow from '@/hooks/useHasMoreBelow';
@@ -29,7 +30,8 @@ const MOBILE_ENTRANCE = {
 
 /**
  * The answer surface. Non-modal on purpose: the prompt bar underneath stays usable for follow-ups,
- * so there is no focus trap. Escape closes; the host returns focus to the entry point.
+ * so there is no focus trap. Escape closes; the host returns focus to the entry point. Before
+ * anything is asked in a chat the panel asks how it can help and offers a first question.
  *
  * On desktop the panel is anchored by its top edge, placed where the top would sit at full height,
  * so arriving content only ever extends it downward and what has already loaded never moves. On
@@ -37,6 +39,7 @@ const MOBILE_ENTRANCE = {
  */
 const AssistantPanel: ReactFC<IAssistantPanel> = ({
   turns,
+  suggestedQuestion,
   takeFocus,
   initialScrollTop,
   onScrollChange,
@@ -128,7 +131,7 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
             AI Assistant
           </p>
           <h2 id={titleId} className="mt-0.5 truncate text-[0.9375rem] font-semibold">
-            {thread.prompt}
+            {thread ? thread.prompt : 'How can I help?'}
           </h2>
         </div>
         <Button
@@ -156,6 +159,15 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
         transition={{ duration: reduceMotion || !hasEntered ? 0 : 0.32, ease: EASE_OUT }}
       >
         <div ref={contentRef} className="flex flex-col gap-5 px-5 py-4">
+          {/* The empty state: nothing asked in this chat yet, so offer a question to start with. */}
+          {turns.length === 0 && (
+            <div>
+              <p className="text-sm text-text-secondary">
+                Ask about a rep, a deal or a coaching moment, or start with this:
+              </p>
+              <NextStepChip text={suggestedQuestion} onAsk={onAsk} />
+            </div>
+          )}
           {turns.map((turn, index) => {
             const isPinned = pinned.some(entry => entry.turnId === turn.id);
             return (
