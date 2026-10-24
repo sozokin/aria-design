@@ -106,13 +106,17 @@ svg { flex: none; }
 .avatar.green { background: var(--success-muted); color: var(--success-muted-foreground); }
 .sidebar-compact .nav-label,
 .sidebar-compact .kbd,
-.sidebar-compact .user-row .who { display: none; }
+.sidebar-compact .user-row .who { display: none; opacity: 0; }
 .sidebar-compact .sidebar { padding-inline: 0.625rem; }
-.sidebar-compact .brand-row { flex-direction: column; gap: 0.5rem; }
-.sidebar-compact .brand { padding-inline: 0; }
+/* Stretch, not centre: the brand then positions its logo by padding alone, like the nav rows. */
+.sidebar-compact .brand-row { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+.sidebar-compact .sidebar-toggle { align-self: center; }
+/* Compact items stay left-anchored and centre their icon through padding alone, so the width and
+   padding glide together and removing the label never shifts the icon. Row width is 52px. */
+.sidebar-compact .brand { padding-inline: 0.8125rem; }   /* (52 - 26) / 2 */
 .sidebar-compact .sidebar-search,
-.sidebar-compact .nav-item,
-.sidebar-compact .user-row { justify-content: center; padding-inline: 0; }
+.sidebar-compact .nav-item { padding-inline: 1.125rem; } /* (52 - 16) / 2 */
+.sidebar-compact .user-row { padding-inline: 0.625rem; } /* (52 - 32) / 2 */
 .sidebar-compact .sidebar-search { border-color: transparent; background: transparent; }
 .sidebar-compact .nav-item { gap: 0; }
 .sidebar-compact .user-row { gap: 0; }
@@ -128,6 +132,26 @@ svg { flex: none; }
 .sidebar-compact [data-label]:hover::after {
   opacity: 1; visibility: visible; transform: translate(0, -50%);
   transition-delay: 160ms, 160ms, 0s;
+}
+
+/* The sidebar glides between widths on the same clock as the mobile drawer. This block sits after
+   the sidebar's base rules on purpose: they set `transition` too, and the later rule wins, which
+   would drop the padding transitions and make the icons jump. */
+@media (min-width: 761px) {
+  .app-shell { transition: grid-template-columns var(--duration-panel) var(--ease-out); }
+  .sidebar { transition: padding-inline var(--duration-panel) var(--ease-out); }
+  .nav-item { transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), padding-inline var(--duration-panel) var(--ease-out); }
+  .brand, .user-row { transition: padding-inline var(--duration-panel) var(--ease-out); }
+  .sidebar-search { transition: padding-inline var(--duration-panel) var(--ease-out), border-color var(--duration-base) var(--ease-out), background var(--duration-base) var(--ease-out); }
+  .nav-label, .kbd, .user-row .who {
+    white-space: nowrap;
+    transition: opacity var(--duration-fast) var(--ease-out), display var(--duration-fast) allow-discrete;
+    @starting-style { opacity: 0; }
+  }
+  /* Rows must be allowed to shrink with the column while their label is still fading; otherwise the
+     label's width props the row (and the active row's background) open until it is removed. */
+  .nav-item, .sidebar-search, .user-row, .brand { min-width: 0; }
+  .nav-label { min-width: 0; overflow: hidden; }
 }
 
 /* Main */
