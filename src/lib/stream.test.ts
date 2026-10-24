@@ -46,4 +46,17 @@ describe('scripted follow-up', () => {
     ]);
     expect(turn.card?.nextStep).not.toBe(BROOKFIELD_NEXT_STEP);
   });
+
+  it("leads back to the discovery review from the Brookfield card's next step", async () => {
+    let brookfield = createTurn('t2', BROOKFIELD_NEXT_STEP);
+    for await (const event of streamAnswer(brookfield.prompt, { speed: 0 })) {
+      brookfield = applyEvent(brookfield, event);
+    }
+    let next = createTurn('t3', brookfield.card!.nextStep);
+    for await (const event of streamAnswer(next.prompt, { speed: 0 })) {
+      next = applyEvent(next, event);
+    }
+    expect(next.status).toBe('Reviewing 6 discovery calls');
+    expect(next.card?.nextStep).toBe(BROOKFIELD_NEXT_STEP);
+  });
 });
