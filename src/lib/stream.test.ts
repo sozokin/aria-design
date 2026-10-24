@@ -29,6 +29,14 @@ describe('applyEvent', () => {
     const done = applyEvent(streaming, { type: 'done' });
     expect(statusLabel(done)).toBe('Reviewed 6 discovery calls');
   });
+
+  it('only rewrites a leading "Reviewing", leaving other labels as they are', () => {
+    const done = applyEvent(
+      applyEvent(createTurn('t1', 'q'), { type: 'status', label: 'Preparing the call plan' }),
+      { type: 'done' },
+    );
+    expect(statusLabel(done)).toBe('Preparing the call plan');
+  });
 });
 
 describe('scripted follow-up', () => {
