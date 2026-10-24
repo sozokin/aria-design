@@ -10,6 +10,9 @@ import { useRef, useState, type CSSProperties } from 'react';
 import { AssistantExperience } from './AssistantExperience';
 import EntityPreview from '@/components/EntityPreview';
 import Icons from '@/components/Icons';
+import Sidebar from '@/widgets/Sidebar';
+
+import { cn } from '@/lib/utils';
 
 export const DEFAULT_PROMPT = 'How is Marcus doing on discovery calls this quarter?';
 
@@ -57,76 +60,8 @@ export function App() {
   };
 
   return (
-    <div className={`app-shell${sidebarIsCompact ? 'sidebar-compact' : ''}`}>
-      <aside className="sidebar" aria-label="Primary">
-        <div className="brand-row">
-          <a className="brand" href="#top" aria-label="Aria Sales Hub home">
-            <img src="/aria-logo.png" alt="" width={26} height={26} />
-            <span className="nav-label">Aria</span>
-          </a>
-          <button
-            className="sidebar-toggle"
-            type="button"
-            aria-label={sidebarIsCompact ? 'Expand sidebar' : 'Compact sidebar'}
-            aria-expanded={!sidebarIsCompact}
-            aria-controls="primary-navigation"
-            onClick={() => setSidebarIsCompact(compact => !compact)}
-          >
-            {sidebarIsCompact ? (
-              <Icons.panelOpen data-icon="inline-only" />
-            ) : (
-              <Icons.panelClose data-icon="inline-only" />
-            )}
-          </button>
-        </div>
-
-        <div className="sidebar-search shell-context" data-label="Search" aria-hidden="true">
-          <Icons.search data-icon="inline-start" />
-          <span className="nav-label">Search</span>
-          <span className="kbd">⌘K</span>
-        </div>
-
-        <nav className="nav-group" id="primary-navigation" aria-label="Main">
-          <span className="nav-item shell-context" aria-current="page" data-label="Home">
-            <Icons.home data-icon="inline-start" />
-            <span className="nav-label">Home</span>
-          </span>
-          <span className="nav-item shell-context" data-label="Team">
-            <Icons.users data-icon="inline-start" />
-            <span className="nav-label">Team</span>
-          </span>
-          <span className="nav-item shell-context" data-label="Coaching">
-            <Icons.target data-icon="inline-start" />
-            <span className="nav-label">Coaching</span>
-          </span>
-          <span className="nav-item shell-context" data-label="Deals">
-            <Icons.briefcase data-icon="inline-start" />
-            <span className="nav-label">Deals</span>
-          </span>
-          <span className="nav-item shell-context" data-label="Library">
-            <Icons.library data-icon="inline-start" />
-            <span className="nav-label">Library</span>
-          </span>
-        </nav>
-
-        <div className="sidebar-foot">
-          <span className="nav-item shell-context" data-label="Help">
-            <Icons.help data-icon="inline-start" />
-            <span className="nav-label">Help</span>
-          </span>
-          <span className="nav-item shell-context" data-label="Settings">
-            <Icons.settings data-icon="inline-start" />
-            <span className="nav-label">Settings</span>
-          </span>
-          <div className="user-row shell-context" data-label="Jordan Ashby">
-            <span className="avatar">JA</span>
-            <span className="who">
-              <strong>Jordan Ashby</strong>
-              <small>Sales manager · North America</small>
-            </span>
-          </div>
-        </div>
-      </aside>
+    <div className={cn('app-shell', sidebarIsCompact ? 'sidebar-compact' : '')}>
+      <Sidebar isCompact={sidebarIsCompact} onCompactChange={setSidebarIsCompact} />
 
       <main className="main" id="top">
         <div className="main-inner">
