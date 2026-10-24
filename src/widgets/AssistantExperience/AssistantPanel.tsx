@@ -1,11 +1,22 @@
-import { useEffect, useId, useLayoutEffect, useRef, type FC as ReactFC } from 'react';
-import { useReducedMotion } from 'motion/react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type FC as ReactFC } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Sparkles, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import AnswerTurn from './AnswerTurn';
 
+import useElementHeight from '@/hooks/useElementHeight';
+import useHasMoreBelow from '@/hooks/useHasMoreBelow';
+import { EASE_OUT } from '@/lib/motion';
+
 import { IAssistantPanel } from './AssistantExperience.types';
+
+// Rises a little and settles, so it reads as coming up from the prompt bar below it.
+const ENTRANCE = {
+  initial: { opacity: 0, y: 16, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: 8, scale: 0.98 },
+};
 
 /**
  * The answer surface. Non-modal on purpose: the prompt bar underneath stays usable for follow-ups,
@@ -30,10 +41,17 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
   const titleId = useId();
   const rootRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   // Set on mount when a scroll position was resumed, so the "new turn" scroll below skips once.
   const resumedScroll = useRef(false);
 
   const reduceMotion = useReducedMotion();
+  const contentHeight = useElementHeight(contentRef);
+  const hasMoreBelow = useHasMoreBelow(scrollRef, contentHeight);
+  // The bottom fade and the height animation wait until the entrance has finished, so they never
+  // compete with it.
+  const [hasEntered, setHasEntered] = useState(false);
+
   const thread = turns[0];
 
   // Take focus so screen readers announce the dialog; Tab then reaches its controls. Not when the
@@ -78,14 +96,19 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
   }, [turns.length, reduceMotion]);
 
   return (
-    <section
+    <motion.section
       ref={rootRef}
       role="dialog"
       aria-modal="false"
       aria-labelledby={titleId}
       tabIndex={-1}
       style={anchor ? { left: anchor.left, width: anchor.width } : undefined}
-      className="fixed inset-x-3 top-8 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-(--z-assistant) flex flex-col rounded-2xl border border-border bg-popover text-popover-foreground shadow-md outline-none shell:inset-x-auto shell:top-[calc(100dvh-5.75rem-var(--assistant-panel-max))] shell:bottom-auto shell:max-h-(--assistant-panel-max) shell:shadow-lg"
+      className="fixed inset-x-3 top-8 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-(--z-assistant) flex flex-col rounded-2xl border border-border bg-popover text-popover-foreground shadow-md will-change-transform outline-none shell:inset-x-auto shell:top-[calc(100dvh-5.75rem-var(--assistant-panel-max))] shell:bottom-auto shell:max-h-(--assistant-panel-max) shell:shadow-lg"
+      initial={ENTRANCE.initial}
+      animate={ENTRANCE.animate}
+      exit={{ ...ENTRANCE.exit, transition: { duration: 0.22, ease: EASE_OUT } }}
+      transition={{ duration: 0.38, ease: EASE_OUT }}
+      onAnimationComplete={() => setHasEntered(true)}
     >
       <header className="flex items-start gap-3 border-b border-border px-5 pt-4 pb-3">
         <div className="min-w-0 flex-1">
@@ -108,14 +131,20 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
         </Button>
       </header>
 
-      <div
+      {/* Animates to the content's height, so new content grows the panel smoothly (downward only,
+          since the top edge is fixed). Capped by the panel's max height, beyond which it scrolls. */}
+      <motion.div
         ref={scrollRef}
         onScroll={event => onScrollChange(event.currentTarget.scrollTop)}
+        data-overflow={hasEntered && hasMoreBelow}
         // Relative so it is the turns' offsetParent: their offsetTop is then measured from the
         // scroll area, not from the dialog with its header.
-        className="relative min-h-0 shrink overflow-y-auto overscroll-contain"
+        className="relative min-h-0 shrink overflow-y-auto overscroll-contain data-[overflow=true]:scroll-fade"
+        initial={false}
+        animate={{ height: contentHeight ?? 'auto' }}
+        transition={{ duration: reduceMotion || !hasEntered ? 0 : 0.32, ease: EASE_OUT }}
       >
-        <div className="flex flex-col gap-5 px-5 py-4">
+        <div ref={contentRef} className="flex flex-col gap-5 px-5 py-4">
           {turns.map((turn, index) => {
             const isPinned = pinned.some(entry => entry.turnId === turn.id);
             return (
@@ -130,8 +159,8 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
             );
           })}
         </div>
-      </div>
-    </section>
+      </motion.div>
+    </motion.section>
   );
 };
 
