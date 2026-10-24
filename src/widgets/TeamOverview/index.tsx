@@ -29,46 +29,63 @@ const OVERVIEW_STATS = [
 ] as const;
 
 /**
- * The team's stats and the Pinned block. On desktop they stack in the right rail; on mobile they sit
- * inline under the brief, where the stats use the shell's horizontal card scroller.
+ * The team's stats and the Pinned block. The same content appears in three places: the desktop
+ * right rail, the mobile drawer (with a larger heading) and inline under the brief on mobile,
+ * where the parent shows the heading and the stats use the shell's horizontal card scroller.
  */
-const TeamOverview: ReactFC<ITeamOverview> = ({ pinned, onJumpToPinned, variant = 'rail' }) => (
-  <>
-    <section aria-labelledby="signals-title">
-      <div className="section-head flex-wrap">
-        <h2 id="signals-title" className="section-title">
-          Team overview
-        </h2>
-        <span className="section-meta">Today · 6 reps · 12 active deals</span>
-      </div>
+const TeamOverview: ReactFC<ITeamOverview> = ({ pinned, onJumpToPinned, variant = 'rail' }) => {
+  const showsOwnTitle = variant !== 'inline';
 
-      <div className={variant === 'inline' ? 'stat-grid' : 'grid grid-cols-1 gap-3'}>
-        {OVERVIEW_STATS.map(stat => (
-          <article
-            className="stat"
-            key={stat.label}
-            aria-label={`${stat.label}: ${stat.value} ${stat.context}`}
-          >
-            <div className="stat-head">
-              <span className="stat-skill">{stat.label}</span>
-            </div>
-            <div className="stat-value-row">
-              <span className="stat-value">{stat.value}</span>
-              <span className="stat-context">{stat.context}</span>
-            </div>
-            <div className="bars" aria-hidden="true">
-              {stat.trend.map((height, index) => (
-                <span key={index} style={{ '--h': `${height}%` } as CSSProperties} />
-              ))}
-            </div>
-            <p className="stat-note">{stat.note}</p>
-          </article>
-        ))}
-      </div>
-    </section>
+  return (
+    <>
+      <section
+        aria-labelledby={showsOwnTitle ? 'signals-title' : undefined}
+        aria-label={showsOwnTitle ? undefined : 'Team overview'}
+      >
+        <div className="section-head flex-wrap">
+          {showsOwnTitle && (
+            <h2
+              id="signals-title"
+              className={
+                variant === 'drawer'
+                  ? 'm-0 font-heading text-base font-medium text-foreground'
+                  : 'section-title'
+              }
+            >
+              Team overview
+            </h2>
+          )}
+          <span className="section-meta">Today · 6 reps · 12 active deals</span>
+        </div>
 
-    <PinnedList pinned={pinned} onJump={onJumpToPinned} />
-  </>
-);
+        <div className={variant === 'inline' ? 'stat-grid' : 'grid grid-cols-1 gap-3'}>
+          {OVERVIEW_STATS.map(stat => (
+            <article
+              className="stat"
+              key={stat.label}
+              aria-label={`${stat.label}: ${stat.value} ${stat.context}`}
+            >
+              <div className="stat-head">
+                <span className="stat-skill">{stat.label}</span>
+              </div>
+              <div className="stat-value-row">
+                <span className="stat-value">{stat.value}</span>
+                <span className="stat-context">{stat.context}</span>
+              </div>
+              <div className="bars" aria-hidden="true">
+                {stat.trend.map((height, index) => (
+                  <span key={index} style={{ '--h': `${height}%` } as CSSProperties} />
+                ))}
+              </div>
+              <p className="stat-note">{stat.note}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <PinnedList pinned={pinned} onJump={onJumpToPinned} />
+    </>
+  );
+};
 
 export default TeamOverview;
