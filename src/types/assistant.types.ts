@@ -56,3 +56,6 @@ export interface IAssistant {
   /** Hides the panel. Leaves the turns and any running stream untouched. */
   close: () => void;
 }
+
+/** Scores are out of 5; the band decides a row's grouping and colour on the card. */
+export type TRatingBand = 'strong' | 'developing' | 'focus';
