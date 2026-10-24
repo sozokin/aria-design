@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { streamAnswer } from '../../mock/streamAnswer';
 import { applyEvent, createTurn, statusLabel } from './stream';
 
+const BROOKFIELD_NEXT_STEP =
+  'In the next Brookfield call, ask who must validate operational and legal readiness.';
+
 describe('applyEvent', () => {
   it('folds the documented sequence into a complete turn', async () => {
     let turn = createTurn('t1', 'How is Marcus doing?');
@@ -25,5 +28,22 @@ describe('applyEvent', () => {
     expect(streaming.phase).toBe('streaming');
     const done = applyEvent(streaming, { type: 'done' });
     expect(statusLabel(done)).toBe('Reviewed 6 discovery calls');
+  });
+});
+
+describe('scripted follow-up', () => {
+  it('serves a different card when the Brookfield next step is asked', async () => {
+    let turn = createTurn('t2', BROOKFIELD_NEXT_STEP);
+    for await (const event of streamAnswer(turn.prompt, { speed: 0 })) {
+      turn = applyEvent(turn, event);
+    }
+    expect(turn.status).toBe('Preparing the Brookfield call plan');
+    expect(turn.card?.period).toBe('Brookfield · Next call prep');
+    expect(turn.card?.rows.map(row => row.id)).toEqual([
+      'call-opener',
+      'stakeholder-map',
+      'validation-plan',
+    ]);
+    expect(turn.card?.nextStep).not.toBe(BROOKFIELD_NEXT_STEP);
   });
 });
