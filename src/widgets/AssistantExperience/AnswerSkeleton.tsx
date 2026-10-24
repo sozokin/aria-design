@@ -11,9 +11,18 @@ const Text = () => (
   </div>
 );
 
+/**
+ * The skeleton card's height. The real card holds this much while it unfolds, so the space the
+ * skeleton reserved is filled rather than given back and taken again.
+ */
+export const CARD_FOOTPRINT = 'min-h-[21rem]';
+
 /** Reserves the coaching card's footprint while the stream is still working. */
 const Card = () => (
-  <div className="rounded-xl border border-border bg-card p-4" aria-hidden="true">
+  <div
+    className={`${CARD_FOOTPRINT} rounded-xl border border-border bg-card p-4`}
+    aria-hidden="true"
+  >
     <div className="flex items-center gap-3">
       <Skeleton className={`${LINE} size-10 rounded-full`} />
       <div className="flex flex-1 flex-col gap-2">

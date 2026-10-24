@@ -91,15 +91,19 @@ export interface ICoachingCard {
   onTogglePin: () => void;
   /** When given, the suggested next step becomes a button that asks it as a follow-up. */
   onAskNextStep?: (question: string) => void;
-  /** Rows reveal with a stagger on first render. Off for the pinned copy, which arrives revealed. */
-  revealRows?: boolean;
+  /**
+   * The card unfolds on first render: the header and summary at once, then each rating band and
+   * the footer in turn, with the rows staggering in as their band opens. Off for the pinned copy,
+   * which arrives whole.
+   */
+  unfold?: boolean;
   className?: string;
 }
 
 export interface ISkillRow {
   row: CoachingRow;
-  /** Position in the card's reveal order, for the stagger. */
-  index: number;
+  /** Seconds before the row appears, counted from the card's first render. */
+  delay: number;
   /** The lowest score on the card gets the coaching-focus note. */
   isLowest: boolean;
   reveal: boolean;

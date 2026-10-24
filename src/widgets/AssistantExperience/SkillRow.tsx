@@ -11,11 +11,9 @@ import { cn } from '@/lib/utils';
 import { ISkillRow } from './AssistantExperience.types';
 
 /** One scored skill: name, score bar, the number, and the evidence line beneath. */
-const SkillRow: ReactFC<ISkillRow> = ({ row, index, isLowest, reveal }) => {
+const SkillRow: ReactFC<ISkillRow> = ({ row, delay, isLowest, reveal }) => {
   const reduceMotion = useReducedMotion();
   const band = RATING_BANDS[ratingBand(row.score)];
-  // Rows reveal one after another; each bar fills just after its row has appeared.
-  const delay = 0.08 + index * 0.07;
 
   return (
     <motion.li
@@ -45,6 +43,7 @@ const SkillRow: ReactFC<ISkillRow> = ({ row, index, isLowest, reveal }) => {
       </span>
       <span className="flex items-center gap-3">
         <span className="h-1.5 w-20 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+          {/* The bar fills just after its row has appeared. */}
           <motion.span
             className={cn('block h-full origin-left rounded-full', band.fill)}
             initial={reveal ? { scaleX: 0 } : false}
