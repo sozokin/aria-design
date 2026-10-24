@@ -1,0 +1,216 @@
+/* Aria Sales Hub: Tailwind v4 + shadcn entry stylesheet.
+
+   Layer order is the integration contract:
+   - `base` holds Tailwind preflight and shadcn's base rules;
+   - `shell` holds the provided host-shell rules (src/styles.css), so they
+     win over preflight on every property they set and the shell renders
+     exactly as delivered;
+   - `utilities` sits above `shell`, so Tailwind classes on new components
+     always win over global shell rules.
+   Tokens follow Mindtickle UI's semantic naming; values are the Mindtickle
+   light theme. Tailwind's own radius, easing and font variables share these
+   names, so `rounded-lg`, `ease-out` and `font-sans` resolve to shell values.
+*/
+@layer theme, base, shell, components, utilities;
+
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "./styles.css" layer(shell);
+
+@custom-variant dark (&:is(.dark *));
+
+@font-face {
+  font-family: "Inter Variable";
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+
+    /* Shell tokens beyond the shadcn defaults */
+    --color-tertiary: var(--tertiary);
+    --color-tertiary-foreground: var(--tertiary-foreground);
+    --color-text-secondary: var(--text-secondary);
+    --color-surface: var(--surface);
+    --color-accent-muted: var(--accent-muted);
+    --color-accent-muted-foreground: var(--accent-muted-foreground);
+    --color-warning: var(--warning);
+    --color-warning-muted: var(--warning-muted);
+    --color-warning-muted-foreground: var(--warning-muted-foreground);
+    --color-info: var(--info);
+    --color-info-muted: var(--info-muted);
+    --color-info-muted-foreground: var(--info-muted-foreground);
+    --color-success: var(--success);
+    --color-success-muted: var(--success-muted);
+    --color-success-muted-foreground: var(--success-muted-foreground);
+    --color-destructive-muted: var(--destructive-muted);
+    --color-destructive-muted-foreground: var(--destructive-muted-foreground);
+
+    /* Radius scale: the shell's formulas (base 0.5rem) rather than the preset's multipliers */
+    --radius-xs: calc(var(--radius) - 6px);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-full: 999px;
+
+    /* Elevation and motion: expose the shell tokens as Tailwind utilities */
+    --shadow-xs: var(--shadow-xs);
+    --shadow-sm: var(--shadow-sm);
+    --shadow-md: var(--shadow-md);
+    --shadow-lg: var(--shadow-lg);
+    --ease-out: var(--ease-out);
+    --ease-in-out: var(--ease-in-out);
+}
+
+:root {
+  color-scheme: light;
+
+  /* Type */
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Semantic colour (Mindtickle light theme) */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.1689 0.0021 286.18);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.395 0.222 272.5);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9823 0.0027 286.35);
+  --secondary-foreground: oklch(0.2739 0.0055 286.03);
+  --muted: oklch(0.9559 0.004 286.32);
+  --muted-foreground: oklch(0.612 0.0155 270.45);
+  --tertiary: oklch(0.9674 0.0013 286.38);
+  --tertiary-foreground: oklch(0.3733 0.0085 285.98);
+  --text-secondary: var(--tertiary-foreground);
+  --accent: oklch(0.395 0.222 272.5);
+  --accent-foreground: oklch(1 0 0);
+  --accent-muted: oklch(0.929 0.0283 288.02);
+  --accent-muted-foreground: oklch(0.3954 0.2219 272.47);
+  --warning: oklch(0.578 0.1535 48.45);
+  --warning-muted: oklch(0.9366 0.0357 59.2);
+  --warning-muted-foreground: oklch(0.5028 0.1311 49.26);
+  --info: oklch(0.5633 0.1733 253.21);
+  --info-muted: oklch(0.9331 0.0331 243.96);
+  --info-muted-foreground: oklch(0.4747 0.1445 252.94);
+  --success: oklch(0.5538 0.1206 156.15);
+  --success-muted: oklch(0.9273 0.0494 163.66);
+  --success-muted-foreground: oklch(0.4666 0.0995 156.44);
+  --destructive: oklch(0.5906 0.2086 31.62);
+  --destructive-muted: oklch(0.9342 0.027 28.95);
+  --destructive-muted-foreground: oklch(0.5012 0.1737 31.73);
+  --border: oklch(0.9321 0.0054 286.3);
+  --input: oklch(0.9321 0.0054 286.3);
+  --ring: oklch(0.6493 0.193 251.78);
+  --sidebar: oklch(0.9827 0.0026 286.35);
+  --sidebar-foreground: oklch(0.2424 0.0095 242.15);
+  --sidebar-accent: oklch(0.929 0.0283 288.02);
+  --sidebar-accent-foreground: oklch(0.5108 0.1985 273.31);
+  --sidebar-border: oklch(0.9321 0.0054 286.3);
+  --surface: oklch(0.98 0 0);
+
+  /* Radius scale (base 0.5rem, as in Mindtickle UI) */
+  --radius: 0.5rem;
+  --radius-xs: calc(var(--radius) - 6px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-full: 999px;
+
+  /* Elevation */
+  --shadow-xs: 0 1px 2px oklch(0.17 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px oklch(0.17 0 0 / 0.08), 0 1px 2px -1px oklch(0.17 0 0 / 0.06);
+  --shadow-md: 0 6px 16px -4px oklch(0.17 0 0 / 0.1), 0 2px 6px -2px oklch(0.17 0 0 / 0.06);
+  --shadow-lg: 0 20px 48px -12px oklch(0.17 0 0 / 0.18), 0 6px 16px -6px oklch(0.17 0 0 / 0.08);
+
+  /* Motion */
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+  --duration-slow: 320ms;
+  --duration-panel: 380ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Layout */
+  --sidebar-w: 15rem;
+  --content-max: 72rem;
+  --assistant-w: 35rem;
+  --z-assistant: 30;
+  --z-trigger: 40;
+  --z-hover-card: 50;
+  /* Required by shadcn components; derived from the shell palette */
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+  --chart-1: var(--accent);
+  --chart-2: var(--info);
+  --chart-3: var(--success);
+  --chart-4: var(--warning);
+  --chart-5: var(--destructive);
+}
+
+/* The shell ships a light theme only (`color-scheme: light`). Add a `.dark`
+   block with the Mindtickle dark values here to enable the dark variant. */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 60ms;
+    --duration-base: 90ms;
+    --duration-slow: 120ms;
+    --duration-panel: 140ms;
+  }
+  html { scroll-behavior: auto; }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

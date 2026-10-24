@@ -1,108 +1,10 @@
-/* Aria Sales Hub shell styles
-   Tokens follow Mindtickle UI's semantic naming (background / foreground /
-   muted / accent / *-muted) so the shell reads like a real product and your
-   answer surface can borrow the same vocabulary. Values are the Mindtickle
-   light theme. Motion tokens are included on purpose.
+/* Aria Sales Hub shell rules.
+   Design tokens (colour, radius, elevation, motion, layout) live in
+   src/index.css next to the Tailwind and shadcn theme mapping, so one
+   `:root` block feeds both the shell classes below and Tailwind utilities.
+   This file is imported into the `shell` cascade layer: it beats Tailwind's
+   preflight and shadcn's base styles, and Tailwind utilities beat it.
 */
-
-@font-face {
-  font-family: "Inter Variable";
-  src: url("/fonts/InterVariable.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-}
-
-:root {
-  color-scheme: light;
-
-  /* Type */
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-
-  /* Semantic colour (Mindtickle light theme) */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.1689 0.0021 286.18);
-  --card: oklch(1 0 0);
-  --card-foreground: var(--foreground);
-  --popover: oklch(1 0 0);
-  --popover-foreground: var(--foreground);
-  --primary: oklch(0.395 0.222 272.5);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.9823 0.0027 286.35);
-  --secondary-foreground: oklch(0.2739 0.0055 286.03);
-  --muted: oklch(0.9559 0.004 286.32);
-  --muted-foreground: oklch(0.612 0.0155 270.45);
-  --tertiary: oklch(0.9674 0.0013 286.38);
-  --tertiary-foreground: oklch(0.3733 0.0085 285.98);
-  --text-secondary: var(--tertiary-foreground);
-  --accent: oklch(0.395 0.222 272.5);
-  --accent-foreground: oklch(1 0 0);
-  --accent-muted: oklch(0.929 0.0283 288.02);
-  --accent-muted-foreground: oklch(0.3954 0.2219 272.47);
-  --warning: oklch(0.578 0.1535 48.45);
-  --warning-muted: oklch(0.9366 0.0357 59.2);
-  --warning-muted-foreground: oklch(0.5028 0.1311 49.26);
-  --info: oklch(0.5633 0.1733 253.21);
-  --info-muted: oklch(0.9331 0.0331 243.96);
-  --info-muted-foreground: oklch(0.4747 0.1445 252.94);
-  --success: oklch(0.5538 0.1206 156.15);
-  --success-muted: oklch(0.9273 0.0494 163.66);
-  --success-muted-foreground: oklch(0.4666 0.0995 156.44);
-  --destructive: oklch(0.5906 0.2086 31.62);
-  --destructive-muted: oklch(0.9342 0.027 28.95);
-  --destructive-muted-foreground: oklch(0.5012 0.1737 31.73);
-  --border: oklch(0.9321 0.0054 286.3);
-  --input: oklch(0.9321 0.0054 286.3);
-  --ring: oklch(0.6493 0.193 251.78);
-  --sidebar: oklch(0.9827 0.0026 286.35);
-  --sidebar-foreground: oklch(0.2424 0.0095 242.15);
-  --sidebar-accent: oklch(0.929 0.0283 288.02);
-  --sidebar-accent-foreground: oklch(0.5108 0.1985 273.31);
-  --sidebar-border: oklch(0.9321 0.0054 286.3);
-  --surface: oklch(0.98 0 0);
-
-  /* Radius scale (base 0.5rem, as in Mindtickle UI) */
-  --radius: 0.5rem;
-  --radius-xs: calc(var(--radius) - 6px);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-full: 999px;
-
-  /* Elevation */
-  --shadow-xs: 0 1px 2px oklch(0.17 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px oklch(0.17 0 0 / 0.08), 0 1px 2px -1px oklch(0.17 0 0 / 0.06);
-  --shadow-md: 0 6px 16px -4px oklch(0.17 0 0 / 0.1), 0 2px 6px -2px oklch(0.17 0 0 / 0.06);
-  --shadow-lg: 0 20px 48px -12px oklch(0.17 0 0 / 0.18), 0 6px 16px -6px oklch(0.17 0 0 / 0.08);
-
-  /* Motion */
-  --duration-fast: 140ms;
-  --duration-base: 220ms;
-  --duration-slow: 320ms;
-  --duration-panel: 380ms;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-
-  /* Layout */
-  --sidebar-w: 15rem;
-  --content-max: 72rem;
-  --assistant-w: 35rem;
-  --z-assistant: 30;
-  --z-trigger: 40;
-  --z-hover-card: 50;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --duration-fast: 60ms;
-    --duration-base: 90ms;
-    --duration-slow: 120ms;
-    --duration-panel: 140ms;
-  }
-  html { scroll-behavior: auto; }
-}
 
 /* Base */
 *, *::before, *::after { box-sizing: border-box; }
@@ -308,7 +210,7 @@ svg { flex: none; }
   transition: box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out);
 }
 .assistant-trigger:focus-within { border-color: transparent; box-shadow: 0 0 0 1px color-mix(in oklch, var(--ring) 58%, transparent), var(--shadow-md); }
-.assistant-trigger input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; font-size: 0.9375rem; }
+.assistant-trigger input { flex: 1; min-width: 0; height: 100%; padding: 1px 2px; border: 0; outline: 0; background: transparent; font-size: 0.9375rem; } /* padding pins the browser default that Tailwind preflight resets */
 .assistant-trigger input::placeholder { color: var(--text-secondary); opacity: 1; }
 .icon-button {
   display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 0; border-radius: var(--radius-full);
