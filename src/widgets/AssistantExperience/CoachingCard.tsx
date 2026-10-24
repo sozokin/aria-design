@@ -1,6 +1,8 @@
 import { useId, type FC as ReactFC } from 'react';
+import { Pin, PinOff } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import NextStepChip from './NextStepChip';
 import SkillRow from './SkillRow';
 
@@ -11,9 +13,16 @@ import { ICoachingCard } from './AssistantExperience.types';
 
 /**
  * The structured answer: who it is about, a summary, the scored skills grouped by rating band, and
- * one suggested next step.
+ * one suggested next step. The same component renders inside the panel and, once pinned, on the
+ * dashboard.
  */
-const CoachingCard: ReactFC<ICoachingCard> = ({ card, onAskNextStep, className }) => {
+const CoachingCard: ReactFC<ICoachingCard> = ({
+  card,
+  isPinned,
+  onTogglePin,
+  onAskNextStep,
+  className,
+}) => {
   const id = useId();
   const groups = groupByBand(card.rows);
   const lowest = lowestRow(card.rows);
@@ -43,6 +52,24 @@ const CoachingCard: ReactFC<ICoachingCard> = ({ card, onAskNextStep, className }
             </span>
           </p>
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="ml-auto shrink-0"
+          onClick={onTogglePin}
+        >
+          {isPinned ? <PinOff data-icon="inline-start" /> : <Pin data-icon="inline-start" />}
+          {isPinned ? (
+            'Unpin'
+          ) : (
+            <>
+              Pin
+              {/* The full label only fits beside the name on desktop; screen readers always get it. */}
+              <span className="sr-only shell:not-sr-only"> to dashboard</span>
+            </>
+          )}
+        </Button>
       </header>
 
       <p className="px-4 pb-3 text-sm">{card.summary}</p>

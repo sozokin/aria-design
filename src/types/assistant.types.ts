@@ -16,6 +16,13 @@ export interface ITurn {
   card: CoachingCard | null;
 }
 
+/** A turn's coaching card once it is pinned to the dashboard. */
+export interface IPinnedTurn {
+  turnId: string;
+  prompt: string;
+  card: CoachingCard;
+}
+
 /** A message for the live region. The id forces a DOM change even when the text repeats. */
 export interface IAnnouncement {
   id: number;
@@ -49,12 +56,26 @@ export interface IAssistant {
    * card. Text chunks are deliberately not announced. Null until something happens.
    */
   announcement: IAnnouncement | null;
+  /**
+   * Coaching cards pinned to the dashboard, newest first. Outlives the panel: the dashboard and
+   * the rail's Pinned list render from it while the panel is closed.
+   */
+  pinned: IPinnedTurn[];
   /** Adds a turn for `prompt`, opens the panel and starts streaming its answer. */
   ask: (prompt: string) => void;
   /** Shows the existing conversation again without asking anything; clears the unseen flag. */
   open: () => void;
   /** Hides the panel. Leaves the turns and any running stream untouched. */
   close: () => void;
+  /** Pins a turn's card to the top of the dashboard and closes the panel. Ignored without a card. */
+  pin: (turn: ITurn) => void;
+  /**
+   * Takes a card off the dashboard and keeps it, with its position, for `UNDO_WINDOW_MS`. Each
+   * unpin has its own undo, so two quick unpins can both be restored.
+   */
+  unpin: (turnId: string) => void;
+  /** Puts one unpinned card back where it was, if its undo window is still open. */
+  undoUnpin: (turnId: string) => void;
 }
 
 /** Scores are out of 5; the band decides a row's grouping and colour on the card. */

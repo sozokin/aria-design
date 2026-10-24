@@ -216,6 +216,17 @@
   }
 }
 
+/* The undo toast's time bar (ToastProgress). Kept under reduced motion: a slow linear fill carries
+   the time limit rather than decorating, and its end is what dismisses the toast. */
+@keyframes toast-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

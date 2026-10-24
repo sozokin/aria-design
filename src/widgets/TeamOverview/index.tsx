@@ -32,7 +32,7 @@ const OVERVIEW_STATS = [
  * The team's stats and the Pinned block. On desktop they stack in the right rail; on mobile they sit
  * inline under the brief, where the stats use the shell's horizontal card scroller.
  */
-const TeamOverview: ReactFC<ITeamOverview> = ({ variant = 'rail' }) => (
+const TeamOverview: ReactFC<ITeamOverview> = ({ pinned, onJumpToPinned, variant = 'rail' }) => (
   <>
     <section aria-labelledby="signals-title">
       <div className="section-head flex-wrap">
@@ -67,7 +67,7 @@ const TeamOverview: ReactFC<ITeamOverview> = ({ variant = 'rail' }) => (
       </div>
     </section>
 
-    <PinnedList />
+    <PinnedList pinned={pinned} onJump={onJumpToPinned} />
   </>
 );
 

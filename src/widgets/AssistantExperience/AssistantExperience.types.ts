@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 
 import type { CoachingCard, CoachingRow } from '../../../mock/types';
-import type { ITurn } from '@/types/assistant.types';
+import type { IPinnedTurn, ITurn } from '@/types/assistant.types';
 
 export interface IAssistantPanel {
   turns: ITurn[];
@@ -9,6 +9,9 @@ export interface IAssistantPanel {
   columnRef: RefObject<HTMLElement | null>;
   /** The host returns focus to the entry point. */
   onDismiss: () => void;
+  pinned: IPinnedTurn[];
+  onPin: (turn: ITurn) => void;
+  onUnpin: (turnId: string) => void;
 }
 
 export interface IAssistantExperience extends IAssistantPanel {
@@ -18,6 +21,8 @@ export interface IAssistantExperience extends IAssistantPanel {
 
 export interface IAnswerTurn {
   turn: ITurn;
+  isPinned: boolean;
+  onTogglePin: () => void;
 }
 
 export interface IStreamedText {
@@ -32,6 +37,8 @@ export interface IStatusLine {
 
 export interface ICoachingCard {
   card: CoachingCard;
+  isPinned: boolean;
+  onTogglePin: () => void;
   /** When given, the suggested next step becomes a button that asks it as a follow-up. */
   onAskNextStep?: (question: string) => void;
   className?: string;
@@ -47,4 +54,9 @@ export interface INextStepChip {
   text: string;
   /** When given, the chip is a button that asks the step as a question. */
   onAsk?: (question: string) => void;
+}
+
+export interface IPinnedAnswer {
+  pinned: IPinnedTurn;
+  onUnpin: () => void;
 }
