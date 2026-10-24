@@ -107,6 +107,11 @@
   --breakpoint-shell: 761px;
 }
 
+/* Fades the bottom edge of a scroll region while more content sits below. */
+@utility scroll-fade {
+  mask-image: linear-gradient(to bottom, black calc(100% - 2.75rem), transparent);
+}
+
 :root {
   color-scheme: light;
 
