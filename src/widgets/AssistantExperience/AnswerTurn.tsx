@@ -13,6 +13,7 @@ const AnswerTurn: ReactFC<IAnswerTurn> = ({
   turn,
   isFollowUp,
   isPinned,
+  shareCardLayout,
   onTogglePin,
   onAskNextStep,
 }) => {
@@ -43,7 +44,7 @@ const AnswerTurn: ReactFC<IAnswerTurn> = ({
           <CoachingCard
             card={turn.card}
             // The pinned copy owns the shared layout id while this turn is pinned.
-            layoutId={isPinned ? undefined : `coaching-card-${turn.id}`}
+            layoutId={isPinned || !shareCardLayout ? undefined : `coaching-card-${turn.id}`}
             isPinned={isPinned}
             onTogglePin={onTogglePin}
             onAskNextStep={onAskNextStep}

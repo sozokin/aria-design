@@ -1,11 +1,14 @@
-import { useLayoutEffect, useState, type RefObject } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
-/** An element's rendered height, kept current by a ResizeObserver. Null until first measured. */
-function useElementHeight(ref: RefObject<HTMLElement | null>) {
+/**
+ * An element's rendered height, kept current by a ResizeObserver. Null until first measured. Takes
+ * the element itself (from a callback ref) rather than a ref object, so an element that remounts
+ * is observed afresh instead of the observer staying on the one that was removed.
+ */
+function useElementHeight(element: HTMLElement | null) {
   const [height, setHeight] = useState<number | null>(null);
 
   useLayoutEffect(() => {
-    const element = ref.current;
     if (!element) return;
 
     const observer = new ResizeObserver(() => setHeight(element.offsetHeight));
@@ -13,7 +16,7 @@ function useElementHeight(ref: RefObject<HTMLElement | null>) {
     setHeight(element.offsetHeight);
 
     return () => observer.disconnect();
-  }, [ref]);
+  }, [element]);
 
   return height;
 }
