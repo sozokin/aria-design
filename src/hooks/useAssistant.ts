@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { streamAnswer } from '../../mock/streamAnswer';
+import { chatSummaries } from '@/lib/chats';
 import { applyEvent, createTurn } from '@/lib/stream';
 
 import type { CoachingCard } from '../../mock/types';
@@ -17,17 +18,21 @@ interface IUndoable {
 }
 
 /**
- * Owns the assistant's conversation: the turns, whether the panel is open, what is pinned and what
- * the live region should say. It lives in the host (App) rather than the panel so an answer keeps
- * streaming while the panel is closed and a pinned card outlives the panel on the dashboard. Each
- * returned value is documented on `IAssistant`.
+ * Owns the assistant's conversations: the turns of every chat, which chat is active, whether the
+ * panel is open, what is pinned and what the live region should say. It lives in the host (App)
+ * rather than the panel so an answer keeps streaming while the panel is closed and a pinned card
+ * outlives the panel on the dashboard. Each returned value is documented on `IAssistant`.
  *
- * Flow: `ask` adds an empty turn and starts `consume`, which pulls the mock stream one event at a
- * time and folds each into that turn with `applyEvent` (status, three text deltas, the card, done).
+ * Flow: `ask` adds an empty turn to the active chat and starts `consume`, which pulls the mock
+ * stream one event at a time and folds each into that turn with `applyEvent` (status, three text
+ * deltas, the card, done).
  */
 function useAssistant(): IAssistant {
-  // The conversation, oldest first. Each turn is one question and the answer streaming into it.
-  const [turns, setTurns] = useState<ITurn[]>([]);
+  // Every chat's turns, oldest first. Each turn is one question and the answer streaming into it,
+  // tagged with the chat it was asked in.
+  const [allTurns, setAllTurns] = useState<ITurn[]>([]);
+  // The chat the panel shows. Switching only changes which turns are picked out below.
+  const [activeChatId, setActiveChatId] = useState('chat-1');
   // Whether the panel shows. Separate from streaming: closing hides it, the answer keeps arriving.
   const [isOpen, setIsOpen] = useState(false);
   // Cards on the dashboard, newest first. Kept here so they outlive the panel.
@@ -39,8 +44,9 @@ function useAssistant(): IAssistant {
 
   // The stream reads this when it finishes, long after the render that started it.
   const isOpenRef = useRef(false);
-  // Numbers the turns' ids. A ref, because a new id never needs a re-render.
+  // Number the turns' and chats' ids. Refs, because a new id never needs a re-render.
   const turnCount = useRef(0);
+  const chatCount = useRef(1);
   // Unpinned cards that can still be undone, by turn id. A ref: the toasts read it, nothing renders it.
   const undoable = useRef(new Map<string, IUndoable>());
 
@@ -51,6 +57,9 @@ function useAssistant(): IAssistant {
   // A fresh id makes the live region repeat a message even when its text is unchanged.
   const announce = useCallback((text: string) => setAnnouncement({ id: Date.now(), text }), []);
 
+  const turns = allTurns.filter(turn => turn.chatId === activeChatId);
+  const chats = chatSummaries(allTurns);
+
   // Pulls one answer from the mock stream into its turn, event by event.
   const consume = useCallback(
     async (id: string, prompt: string) => {
@@ -58,8 +67,9 @@ function useAssistant(): IAssistant {
 
       for await (const event of streamAnswer(prompt)) {
         // The functional updater sees the latest turns, not the ones from when this loop began;
-        // only this answer's turn changes, so a follow-up never touches an earlier one.
-        setTurns(all => all.map(turn => (turn.id === id ? applyEvent(turn, event) : turn)));
+        // only this answer's turn changes, so a follow-up never touches an earlier one, and an
+        // answer keeps landing in its own chat after the reader has switched to another.
+        setAllTurns(all => all.map(turn => (turn.id === id ? applyEvent(turn, event) : turn)));
 
         if (event.type === 'status') announce(event.label);
         if (event.type === 'artifact') card = event.data;
@@ -76,16 +86,17 @@ function useAssistant(): IAssistant {
     [announce],
   );
 
-  // A new question: add its empty turn, show the panel and start streaming without waiting for it.
+  // A new question in the active chat: add its empty turn, show the panel and start streaming
+  // without waiting for it.
   const ask = useCallback(
     (prompt: string) => {
       const id = `turn-${++turnCount.current}`;
-      setTurns(all => [...all, createTurn(id, prompt)]);
+      setAllTurns(all => [...all, createTurn(id, activeChatId, prompt)]);
       setIsOpen(true);
       setHasUnseenAnswer(false);
       void consume(id, prompt);
     },
-    [consume],
+    [consume, activeChatId],
   );
 
   // Back to the existing conversation without asking anything; looking at it clears "unseen".
@@ -96,6 +107,26 @@ function useAssistant(): IAssistant {
 
   // Only hides the panel: the turns and any running stream are left alone.
   const close = useCallback(() => setIsOpen(false), []);
+
+  // A fresh chat, opened on its empty state so the panel can ask how it can help. An active chat
+  // that has not been asked anything is that fresh chat already, so then only the panel opens. The
+  // chat joins the history once its first question is asked.
+  const newChat = () => {
+    if (turns.length > 0) setActiveChatId(`chat-${++chatCount.current}`);
+    setIsOpen(true);
+    setHasUnseenAnswer(false);
+    announce('New chat. How can I help?');
+  };
+
+  // Back to an earlier chat, with the panel open on it. The dialog's title changes under a focused
+  // History button, so the live region says which chat this now is.
+  const switchChat = (chatId: string) => {
+    setActiveChatId(chatId);
+    setIsOpen(true);
+    setHasUnseenAnswer(false);
+    const title = chats.find(chat => chat.id === chatId)?.title;
+    if (title) announce(`Opened chat: ${title}`);
+  };
 
   // Newest pin goes on top, and the panel closes so the card can be seen settling on the dashboard.
   const pin = ({ id, prompt, card }: ITurn) => {
@@ -151,6 +182,8 @@ function useAssistant(): IAssistant {
 
   return {
     turns,
+    activeChatId,
+    chats,
     isOpen,
     hasUnseenAnswer,
     announcement,
@@ -158,6 +191,8 @@ function useAssistant(): IAssistant {
     ask,
     open,
     close,
+    newChat,
+    switchChat,
     pin,
     unpin,
     undoUnpin,

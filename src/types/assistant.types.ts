@@ -5,6 +5,8 @@ export type TTurnPhase = 'reviewing' | 'streaming' | 'complete';
 /** One question and the answer that streams in for it. */
 export interface ITurn {
   id: string;
+  /** The chat this turn belongs to. Turns with the same chat id form one thread. */
+  chatId: string;
   prompt: string;
   phase: TTurnPhase;
   /** Progress label from the stream, e.g. "Reviewing 6 discovery calls". */
@@ -14,6 +16,17 @@ export interface ITurn {
   /** The same text as it arrived, one entry per delta, so each can fade in on its own. */
   deltas: string[];
   card: CoachingCard | null;
+}
+
+/** One chat in the history list. */
+export interface IChatSummary {
+  id: string;
+  /** The chat's first question, which is also the panel's title for it. */
+  title: string;
+  /** How many questions have been asked in it. */
+  turnCount: number;
+  /** Who the latest coaching card is about, once one has arrived. */
+  rep: string | null;
 }
 
 /** A turn's coaching card once it is pinned to the dashboard. */
@@ -36,10 +49,14 @@ export interface IAnnouncement {
  */
 export interface IAssistant {
   /**
-   * The conversation, oldest first: one turn per question, each filled in by its own stream.
+   * The active chat's turns, oldest first: one per question, each filled in by its own stream.
    * The panel renders from it; the latest card's next step feeds the brief.
    */
   turns: ITurn[];
+  /** The chat the panel and the prompt bar are about. A new chat has no turns until it is asked. */
+  activeChatId: string;
+  /** Every chat with at least one turn, most recently asked first, for the history list. */
+  chats: IChatSummary[];
   /**
    * Whether the answer panel is showing. Independent of streaming: closing only hides the panel,
    * and an answer keeps arriving behind it.
@@ -68,6 +85,13 @@ export interface IAssistant {
   open: () => void;
   /** Hides the panel. Leaves the turns and any running stream untouched. */
   close: () => void;
+  /**
+   * Makes a fresh, empty chat active and opens the panel on its empty state. If the active chat has
+   * not been asked anything yet, it already is that fresh chat, so only the panel opens.
+   */
+  newChat: () => void;
+  /** Makes an earlier chat active and opens the panel on it. */
+  switchChat: (chatId: string) => void;
   /** Pins a turn's card to the top of the dashboard and closes the panel. Ignored without a card. */
   pin: (turn: ITurn) => void;
   /**

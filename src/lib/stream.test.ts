@@ -8,7 +8,7 @@ const BROOKFIELD_NEXT_STEP =
 
 describe('applyEvent', () => {
   it('folds the documented sequence into a complete turn', async () => {
-    let turn = createTurn('t1', 'How is Marcus doing?');
+    let turn = createTurn('t1', 'c1', 'How is Marcus doing?');
     for await (const event of streamAnswer(turn.prompt, { speed: 0 })) {
       turn = applyEvent(turn, event);
     }
@@ -21,7 +21,7 @@ describe('applyEvent', () => {
   });
 
   it('moves to streaming on the first text delta and reads past tense when complete', () => {
-    const start = createTurn('t1', 'q');
+    const start = createTurn('t1', 'c1', 'q');
     const reviewing = applyEvent(start, { type: 'status', label: 'Reviewing 6 discovery calls' });
     expect(statusLabel(reviewing)).toBe('Reviewing 6 discovery calls');
     const streaming = applyEvent(reviewing, { type: 'text', delta: 'Hi' });
@@ -32,7 +32,7 @@ describe('applyEvent', () => {
 
   it('only rewrites a leading "Reviewing", leaving other labels as they are', () => {
     const done = applyEvent(
-      applyEvent(createTurn('t1', 'q'), { type: 'status', label: 'Preparing the call plan' }),
+      applyEvent(createTurn('t1', 'c1', 'q'), { type: 'status', label: 'Preparing the call plan' }),
       { type: 'done' },
     );
     expect(statusLabel(done)).toBe('Preparing the call plan');
@@ -41,7 +41,7 @@ describe('applyEvent', () => {
 
 describe('scripted follow-up', () => {
   it('serves a different card when the Brookfield next step is asked', async () => {
-    let turn = createTurn('t2', BROOKFIELD_NEXT_STEP);
+    let turn = createTurn('t2', 'c1', BROOKFIELD_NEXT_STEP);
     for await (const event of streamAnswer(turn.prompt, { speed: 0 })) {
       turn = applyEvent(turn, event);
     }
@@ -56,11 +56,11 @@ describe('scripted follow-up', () => {
   });
 
   it("loops from the Brookfield card's next step back to the first answer", async () => {
-    let brookfield = createTurn('t2', BROOKFIELD_NEXT_STEP);
+    let brookfield = createTurn('t2', 'c1', BROOKFIELD_NEXT_STEP);
     for await (const event of streamAnswer(brookfield.prompt, { speed: 0 })) {
       brookfield = applyEvent(brookfield, event);
     }
-    let next = createTurn('t3', brookfield.card!.nextStep);
+    let next = createTurn('t3', 'c1', brookfield.card!.nextStep);
     for await (const event of streamAnswer(next.prompt, { speed: 0 })) {
       next = applyEvent(next, event);
     }
