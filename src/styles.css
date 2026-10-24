@@ -317,6 +317,11 @@ svg { flex: none; }
 .icon-button.optional-action:disabled { color: var(--text-secondary); background: transparent; cursor: default; }
 .icon-button.primary { background: var(--primary); color: var(--primary-foreground); width: 2.5rem; height: 2.5rem; }
 .icon-button.primary:hover { background: oklch(0.36 0.21 272.5); color: var(--primary-foreground); }
+/* The send arrow points at what the button will do: up to open the panel, at the text (left) to
+   ask it, down to close the panel. It turns the short way between those. */
+.icon-button.primary svg { transition: transform var(--duration-slow) var(--ease-out); }
+.icon-button.primary[data-intent="ask"] svg { transform: rotate(-90deg); }
+.icon-button.primary[data-intent="close"] svg { transform: rotate(-180deg); }
 /* A press reads as a press: the button sinks while held, then springs back past its size and
    settles. The release is the slower, bouncy half; the press itself is quick and plain. */
 .icon-button.primary {

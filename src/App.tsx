@@ -71,18 +71,22 @@ const App: ReactFC = () => {
     assistant.open();
   };
 
-  // A typed question is asked and the bar cleared for the next one. An empty bar reopens the
-  // conversation if there is one, or asks the opening question if there is not.
+  // The send button does what its arrow shows (and Enter on desktop with it): with text in the bar
+  // it asks the question and clears the bar; with an empty bar it opens the panel if it is closed
+  // and closes it if it is open. Opening this way is like the plus: the panel is a companion and
+  // focus goes to the bar, ready for the question.
   const submitPrompt = () => {
     const text = prompt.trim();
-    setPanelTakesFocus(true);
     if (text) {
+      setPanelTakesFocus(true);
       setPrompt('');
       assistant.ask(text);
-    } else if (thread) {
-      assistant.open();
+    } else if (assistant.isOpen) {
+      dismissAssistant();
     } else {
-      assistant.ask(DEFAULT_PROMPT);
+      setPanelTakesFocus(false);
+      assistant.open();
+      promptRef.current?.focus();
     }
   };
 
