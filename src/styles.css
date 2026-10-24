@@ -279,6 +279,12 @@ svg { flex: none; }
   box-shadow: 0 0 0 1px color-mix(in oklch, var(--accent) 14%, transparent), var(--shadow-lg); /* floats clear of the content behind it */
   transition: box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out);
 }
+/* While the new-chat pill comes or goes, the bar's edges glide to make or take back its room. Only
+   then: the bar also follows the column as it resizes, which must not lag behind it. */
+.assistant-trigger[data-gliding="true"] {
+  transition: box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out),
+    left var(--duration-slow) var(--ease-out), width var(--duration-slow) var(--ease-out), right var(--duration-slow) var(--ease-out);
+}
 .assistant-trigger:focus-within { border-color: transparent; box-shadow: 0 0 0 1px color-mix(in oklch, var(--ring) 58%, transparent), var(--shadow-lg); }
 /* The field grows a line at a time to three lines (PromptBar sets its height, so the growth is a
    transition), then scrolls, fading out at whichever edge the text continues past. The buttons stay
@@ -332,22 +338,27 @@ svg { flex: none; }
   /* Still sinks, so the press is confirmed, but returns without the bounce. */
   .icon-button.primary { transition-timing-function: var(--ease-out); }
 }
-/* New chat: a pill beside the entry point with the bar's one-line height, border and shadow,
-   holding its primary button the way the bar holds the send button, and centred on the bar as
-   the bar grows. The desktop `left` is a fallback until the bar has been measured; PromptBar then
-   sets it inline. */
+/* New chat: a pill with the bar's one-line height, border and shadow, holding its primary button
+   the way the bar holds the send button, and centred on the bar as the bar grows. It waits behind
+   the bar's right end (a circle the size of the bar's end, so the bar covers it exactly) and glides
+   out beside the bar once there is a chat to leave. The desktop `left` is a fallback until the bar
+   has been measured; PromptBar then sets it inline. */
 .new-chat-trigger {
   /* The bar's --shadow-lg, re-cut for a 3.25rem circle: its -12px spread leaves a 52px element only a
      28px shadow to blur, so it dissolves and the pill reads flat beside the bar. Less negative spread
      and a darker tint make the two look equally lifted. */
   --shadow-pill: 0 20px 48px -8px oklch(0.17 0 0 / 0.3), 0 6px 16px -4px oklch(0.17 0 0 / 0.14);
-  position: fixed; z-index: var(--z-trigger); bottom: calc(1.5rem + (var(--prompt-bar-h) - 3.25rem) / 2);
+  position: fixed; z-index: calc(var(--z-trigger) - 1); bottom: calc(1.5rem + (var(--prompt-bar-h) - 3.25rem) / 2);
   left: calc(50% + var(--sidebar-w) / 2 + min(var(--assistant-w), calc(100vw - var(--sidebar-w) - 3rem)) / 2 + 0.75rem);
   display: grid; place-items: center; width: 3.25rem; height: 3.25rem;
   border: 1px solid transparent; border-radius: var(--radius-full); background: var(--background);
   box-shadow: 0 0 0 1px color-mix(in oklch, var(--accent) 14%, transparent), var(--shadow-pill);
-  transition: box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out), bottom var(--duration-base) var(--ease-out);
+  transition: box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out), bottom var(--duration-base) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out), opacity var(--duration-slow) var(--ease-out);
 }
+.new-chat-trigger[data-gliding="true"] { transition-property: box-shadow, border-color, bottom, transform, opacity, left, right; transition-duration: var(--duration-base), var(--duration-base), var(--duration-base), var(--duration-slow), var(--duration-slow), var(--duration-slow), var(--duration-slow); }
+/* Hidden: tucked a little further under the bar, and faded so its shadow does not show round the bar's end. */
+.new-chat-trigger[data-shown="false"] { transform: translateX(-0.75rem); opacity: 0; }
 .new-chat-trigger:focus-within { box-shadow: 0 0 0 1px color-mix(in oklch, var(--ring) 58%, transparent), var(--shadow-pill); }
 
 /* Candidate placeholder */
@@ -391,11 +402,12 @@ svg { flex: none; }
   .stat-grid::-webkit-scrollbar { display: none; }
   .stat { flex: 0 0 72%; scroll-snap-align: start; }
   .assistant-trigger {
-    /* Room on the right for the new-chat pill (3.25rem) and the gap to it. */
-    left: 0.75rem; right: 4.75rem; width: auto; transform: none;
+    left: 0.75rem; right: 0.75rem; width: auto; transform: none;
     /* Clear the home indicator, with the same 20px gap above it as everywhere else. */
     bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
   }
+  /* Room on the right for the new-chat pill (3.25rem) and the gap to it, once it is out. */
+  .assistant-trigger[data-with-plus="true"] { right: 4.75rem; }
   .new-chat-trigger { left: auto; right: 0.75rem; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px) + (var(--prompt-bar-h) - 3.25rem) / 2); }
   /* iOS Safari zooms the page into any focused input smaller than 16px, and leaves it zoomed. */
   .assistant-trigger textarea, .assistant-mirror { font-size: 1rem; }
