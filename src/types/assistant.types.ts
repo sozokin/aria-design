@@ -63,6 +63,11 @@ export interface IAssistant {
    */
   isOpen: boolean;
   /**
+   * Desktop only: the panel fills most of the screen, with the chats as a left pane. Remembered
+   * across a close, so a reader who works expanded gets the panel back expanded.
+   */
+  isExpanded: boolean;
+  /**
    * An answer finished while the panel was closed and has not been looked at since. Drives the
    * prompt bar's "Answer ready" pill. Not derivable from `isOpen` and the turn's phase, which read
    * the same after the answer has been seen and the panel closed again.
@@ -85,6 +90,8 @@ export interface IAssistant {
   open: () => void;
   /** Hides the panel. Leaves the turns and any running stream untouched. */
   close: () => void;
+  /** Expands the panel to most of the screen, or brings it back to its usual size. */
+  setExpanded: (expanded: boolean) => void;
   /**
    * Makes a fresh, empty chat active and opens the panel on its empty state. If the active chat has
    * not been asked anything yet, it already is that fresh chat, so only the panel opens.

@@ -126,9 +126,9 @@ const App: ReactFC = () => {
     promptRef.current?.focus();
   };
 
-  // A chat chosen in a history sheet (the rail's, or the mobile menu's): the panel shows it as a
-  // companion, since the sheet returns focus to its own button as it closes; the live region names
-  // the chat.
+  // A chat chosen in a history sheet (the rail's, or the mobile menu's) or in the expanded panel's
+  // left pane: the panel shows it as a companion, since a sheet returns focus to its own button as
+  // it closes and the pane keeps it; the live region names the chat.
   const openChatFromHistory = (chatId: string) => {
     setPanelTakesFocus(false);
     assistant.switchChat(chatId);
@@ -275,8 +275,15 @@ const App: ReactFC = () => {
 
           <AssistantExperience
             isOpen={assistant.isOpen}
+            // Expanded is a desktop form; the mobile sheet already has the whole screen.
+            isExpanded={isDesktop && assistant.isExpanded}
+            onExpandedChange={assistant.setExpanded}
             turns={assistant.turns}
             suggestedQuestion={suggestedNextStep}
+            chats={assistant.chats}
+            activeChatId={assistant.activeChatId}
+            onSwitchChat={openChatFromHistory}
+            onNewChat={startNewChat}
             takeFocus={panelTakesFocus}
             initialScrollTop={panelScroll.resumeTop}
             onScrollChange={panelScroll.remember}

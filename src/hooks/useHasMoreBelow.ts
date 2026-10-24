@@ -1,14 +1,14 @@
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
- * True while a scroll region has content below the fold. `contentHeight` is only a dependency:
+ * True while a scroll region has content below the fold. Takes the element itself (from a callback
+ * ref), so a region that remounts is watched afresh. `contentHeight` is only a dependency:
  * re-checking when the content grows, not just when the user scrolls.
  */
-function useHasMoreBelow(ref: RefObject<HTMLElement | null>, contentHeight: number | null) {
+function useHasMoreBelow(element: HTMLElement | null, contentHeight: number | null) {
   const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
-    const element = ref.current;
     if (!element) return;
 
     const check = () => {
@@ -25,7 +25,7 @@ function useHasMoreBelow(ref: RefObject<HTMLElement | null>, contentHeight: numb
       element.removeEventListener('scroll', check);
       observer.disconnect();
     };
-  }, [ref, contentHeight]);
+  }, [element, contentHeight]);
 
   return hasMore;
 }

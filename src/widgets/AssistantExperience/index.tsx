@@ -3,18 +3,23 @@ import { AnimatePresence, motion } from 'motion/react';
 
 import AssistantPanel from './AssistantPanel';
 
+import { cn } from '@/lib/utils';
+
 import { IAssistantExperience } from './AssistantExperience.types';
 
 /**
  * The AI Assistant answer experience. State lives in the host so an answer keeps streaming while
  * this surface is closed; this component only decides how the panel enters and leaves.
- * AnimatePresence keeps the panel mounted until its exit animation has played. On mobile the
- * sheet sits on a dimmed, blurred backdrop; on desktop the panel floats over the dashboard without
- * one.
+ * AnimatePresence keeps the panel mounted until its exit animation has played. The dimmed, blurred
+ * backdrop sits under the mobile sheet and under the expanded desktop panel; the usual desktop
+ * panel floats over the dashboard without one. The panel keeps its identity across forms and
+ * animates between them itself; only the backdrop is keyed, so it fades in and out with the form.
  */
 const AssistantExperience: ReactFC<IAssistantExperience> = ({
   isOpen,
+  isExpanded,
   onDismiss,
+  onExpandedChange,
   ...panelProps
 }) => (
   <AnimatePresence>
@@ -22,10 +27,14 @@ const AssistantExperience: ReactFC<IAssistantExperience> = ({
       // The blur is a static layer and only the dim fades: animating the opacity of a
       // backdrop-filter re-blurs the whole page every frame, which stutters on iOS WebKit.
       <motion.div
-        key="assistant-backdrop"
+        key={isExpanded ? 'assistant-backdrop-expanded' : 'assistant-backdrop'}
         aria-hidden="true"
-        onClick={onDismiss}
-        className="fixed inset-0 z-[calc(var(--z-assistant)-1)] supports-backdrop-filter:backdrop-blur-xs shell:hidden"
+        // Under the expanded panel, a click steps back to the usual panel rather than closing.
+        onClick={isExpanded ? () => onExpandedChange(false) : onDismiss}
+        className={cn(
+          'fixed inset-0 z-[calc(var(--z-assistant)-1)] supports-backdrop-filter:backdrop-blur-xs',
+          !isExpanded && 'shell:hidden',
+        )}
         exit={{ opacity: 0, transition: { duration: 0.2 } }}
       >
         <motion.div
@@ -36,7 +45,15 @@ const AssistantExperience: ReactFC<IAssistantExperience> = ({
         />
       </motion.div>
     )}
-    {isOpen && <AssistantPanel key="assistant-panel" onDismiss={onDismiss} {...panelProps} />}
+    {isOpen && (
+      <AssistantPanel
+        key="assistant-panel"
+        isExpanded={isExpanded}
+        onExpandedChange={onExpandedChange}
+        onDismiss={onDismiss}
+        {...panelProps}
+      />
+    )}
   </AnimatePresence>
 );
 

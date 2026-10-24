@@ -4,18 +4,26 @@ import type { CoachingCard, CoachingRow } from '../../../mock/types';
 import type { IAnnouncement, IChatSummary, IPinnedTurn, ITurn } from '@/types/assistant.types';
 import type { IColumnAnchor } from '@/types/layout.types';
 
-export interface IChatHistory {
+export interface IChatList {
   /** Every chat with turns, most recently asked first. */
   chats: IChatSummary[];
   activeChatId: string;
   onSwitchChat: (chatId: string) => void;
+}
+
+export interface IChatHistory extends IChatList {
   /** Icon and "Chat history" rather than the icon alone. */
   withLabel?: boolean;
 }
 
-export interface IAssistantPanel {
+export interface IAssistantPanel extends IChatList {
   /** The active chat's turns. Empty for a chat nothing has been asked in yet. */
   turns: ITurn[];
+  /** Desktop only: most of the screen, with the chats as a left pane, instead of the usual panel. */
+  isExpanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
+  /** The left pane's New chat button. */
+  onNewChat: () => void;
   /** Offered as a first question while the chat is empty. */
   suggestedQuestion: string;
   /** Whether to move focus into the dialog on open. */
@@ -48,6 +56,12 @@ export interface IAnswerTurn {
   /** Follow-up turns show the question as a message bubble above the answer. */
   isFollowUp: boolean;
   isPinned: boolean;
+  /**
+   * Whether the card carries the shared layout id that lets a pin fly it to the dashboard. Off in
+   * the expanded panel: the panel's content remounts when it changes form, and a shared id would
+   * make the new card fly in from where the old one was, scaled and out of the box.
+   */
+  shareCardLayout: boolean;
   onTogglePin: () => void;
   onAskNextStep: (question: string) => void;
 }

@@ -35,6 +35,8 @@ function useAssistant(): IAssistant {
   const [activeChatId, setActiveChatId] = useState('chat-1');
   // Whether the panel shows. Separate from streaming: closing hides it, the answer keeps arriving.
   const [isOpen, setIsOpen] = useState(false);
+  // Desktop: the panel at most of the screen's size. Kept across closes; the host ignores it on mobile.
+  const [isExpanded, setIsExpanded] = useState(false);
   // Cards on the dashboard, newest first. Kept here so they outlive the panel.
   const [pinned, setPinned] = useState<IPinnedTurn[]>([]);
   // An answer finished while the panel was closed; the prompt bar shows "Answer ready".
@@ -185,12 +187,14 @@ function useAssistant(): IAssistant {
     activeChatId,
     chats,
     isOpen,
+    isExpanded,
     hasUnseenAnswer,
     announcement,
     pinned,
     ask,
     open,
     close,
+    setExpanded: setIsExpanded,
     newChat,
     switchChat,
     pin,
