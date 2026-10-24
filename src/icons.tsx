@@ -1,0 +1,31 @@
+import {
+  ArrowUp,
+  BriefcaseBusiness,
+  CircleHelp,
+  House,
+  LibraryBig,
+  Mic,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Settings,
+  Shield,
+  Target,
+  UsersRound,
+} from "lucide-react";
+
+export const Icons = {
+  arrowUp: ArrowUp,
+  briefcase: BriefcaseBusiness,
+  help: CircleHelp,
+  home: House,
+  library: LibraryBig,
+  mic: Mic,
+  panelClose: PanelLeftClose,
+  panelOpen: PanelLeftOpen,
+  search: Search,
+  settings: Settings,
+  shield: Shield,
+  target: Target,
+  users: UsersRound,
+};
