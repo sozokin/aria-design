@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import ToastProgress from '@/components/ToastProgress';
 import { Toaster } from '@/components/ui/sonner';
 import AssistantExperience from '@/widgets/AssistantExperience';
+import ChatHistory from '@/widgets/AssistantExperience/ChatHistory';
 import LiveAnnouncer from '@/widgets/AssistantExperience/LiveAnnouncer';
 import PinnedAnswer, { pinnedAnswerId } from '@/widgets/AssistantExperience/PinnedAnswer';
 import Brief from '@/widgets/Brief';
@@ -119,6 +120,13 @@ const App: ReactFC = () => {
     setPanelTakesFocus(false);
     assistant.newChat();
     promptRef.current?.focus();
+  };
+
+  // A chat chosen in the rail's history sheet: the panel shows it as a companion, since the sheet
+  // returns focus to its own button as it closes; the live region names the chat.
+  const openChatFromHistory = (chatId: string) => {
+    setPanelTakesFocus(false);
+    assistant.switchChat(chatId);
   };
 
   // Every unpin offers its own undo for UNDO_WINDOW_MS; each toast restores only its own card.
@@ -242,7 +250,15 @@ const App: ReactFC = () => {
                   className="flex flex-col gap-6 pt-1"
                   aria-label="Team overview and pinned answers"
                 >
-                  <p className="date-eyebrow text-right">{TODAY}</p>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <p className="date-eyebrow text-right">{TODAY}</p>
+                    <ChatHistory
+                      chats={assistant.chats}
+                      activeChatId={assistant.activeChatId}
+                      onSwitchChat={openChatFromHistory}
+                      withLabel
+                    />
+                  </div>
                   <TeamOverview pinned={assistant.pinned} onJumpToPinned={jumpToPinned} />
                 </aside>
               )}
