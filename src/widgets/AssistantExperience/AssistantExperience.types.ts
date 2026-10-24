@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 
+import type { CoachingCard, CoachingRow } from '../../../mock/types';
 import type { ITurn } from '@/types/assistant.types';
 
 export interface IAssistantPanel {
@@ -27,4 +28,23 @@ export interface IStreamedText {
 
 export interface IStatusLine {
   turn: ITurn;
+}
+
+export interface ICoachingCard {
+  card: CoachingCard;
+  /** When given, the suggested next step becomes a button that asks it as a follow-up. */
+  onAskNextStep?: (question: string) => void;
+  className?: string;
+}
+
+export interface ISkillRow {
+  row: CoachingRow;
+  /** The lowest score on the card gets the coaching-focus note. */
+  isLowest: boolean;
+}
+
+export interface INextStepChip {
+  text: string;
+  /** When given, the chip is a button that asks the step as a question. */
+  onAsk?: (question: string) => void;
 }

@@ -1,6 +1,7 @@
 import { type FC as ReactFC } from 'react';
 
 import AnswerSkeleton from './AnswerSkeleton';
+import CoachingCard from './CoachingCard';
 import StatusLine from './StatusLine';
 import StreamedText from './StreamedText';
 
@@ -23,7 +24,7 @@ const AnswerTurn: ReactFC<IAnswerTurn> = ({ turn }) => {
         <AnswerSkeleton.Text />
       )}
 
-      {turn.card === null && <AnswerSkeleton.Card />}
+      {turn.card ? <CoachingCard card={turn.card} /> : <AnswerSkeleton.Card />}
     </div>
   );
 };
