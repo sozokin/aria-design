@@ -18,6 +18,8 @@ export interface IAssistantPanel {
   /** The host returns focus to the entry point. */
   onDismiss: () => void;
   pinned: IPinnedTurn[];
+  /** Asks a follow-up in this thread (the card's suggested next step). */
+  onAsk: (question: string) => void;
   onPin: (turn: ITurn) => void;
   onUnpin: (turnId: string) => void;
 }
@@ -29,8 +31,11 @@ export interface IAssistantExperience extends IAssistantPanel {
 
 export interface IAnswerTurn {
   turn: ITurn;
+  /** Follow-up turns show the question as a message bubble above the answer. */
+  isFollowUp: boolean;
   isPinned: boolean;
   onTogglePin: () => void;
+  onAskNextStep: (question: string) => void;
 }
 
 export interface IStreamedText {
@@ -67,4 +72,5 @@ export interface INextStepChip {
 export interface IPinnedAnswer {
   pinned: IPinnedTurn;
   onUnpin: () => void;
+  onAskNextStep: (question: string) => void;
 }

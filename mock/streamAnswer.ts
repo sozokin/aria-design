@@ -37,6 +37,68 @@ const COACHING_CARD: Extract<StreamEvent, { type: 'artifact' }> = {
   },
 };
 
+/**
+ * A second scripted answer, served when the first card's suggested next step
+ * is asked as a follow-up, so a thread can show two different answers. Pure
+ * fixture data; the contract (status, three deltas, one card, done) is the same.
+ */
+const BROOKFIELD_ANSWER = [
+  'For the next Brookfield call, the gap is ownership rather than interest. Omar is engaged on security, but nobody on their side has been named for legal or operational sign-off.',
+  ' Ask Marcus to open with a direct question about who validates each, and to get names rather than teams.',
+  ' Once those owners are known, the security review on September 9 has a clear path to approval.',
+];
+
+const BROOKFIELD_CARD: Extract<StreamEvent, { type: 'artifact' }> = {
+  type: 'artifact',
+  kind: 'coaching-card',
+  data: {
+    rep: 'Marcus Bell',
+    period: 'Brookfield · Next call prep',
+    summary: 'Three sign-offs still need named owners before the security review lands.',
+    rows: [
+      {
+        id: 'call-opener',
+        skill: 'Call opener',
+        score: 4.3,
+        evidence: "Marcus's recap of last call's concerns was concise and accurate.",
+      },
+      {
+        id: 'stakeholder-map',
+        skill: 'Stakeholder map',
+        score: 3.2,
+        evidence: 'Omar (security) is engaged; the legal and operations owners are still unnamed.',
+      },
+      {
+        id: 'validation-plan',
+        skill: 'Validation plan',
+        score: 2.6,
+        evidence: 'No agreed checklist for who signs off operational readiness.',
+      },
+    ],
+    nextStep:
+      'Open the call by asking Omar who owns legal sign-off, then confirm a date for the operational walkthrough.',
+  },
+};
+
+type ScriptedAnswer = {
+  status: string;
+  deltas: string[];
+  card: Extract<StreamEvent, { type: 'artifact' }>;
+};
+
+/** Picks the scripted answer for a prompt. Everything but the Brookfield follow-up gets the default. */
+function answerFor(prompt: string): ScriptedAnswer {
+  const asked = prompt.toLowerCase();
+  if (asked.includes('brookfield') && (asked.includes('validate') || asked.includes('readiness'))) {
+    return {
+      status: 'Preparing the Brookfield call plan',
+      deltas: BROOKFIELD_ANSWER,
+      card: BROOKFIELD_CARD,
+    };
+  }
+  return { status: 'Reviewing 6 discovery calls', deltas: ANSWER, card: COACHING_CARD };
+}
+
 const wait = (milliseconds: number) =>
   new Promise<void>(resolve => window.setTimeout(resolve, milliseconds));
 
@@ -45,22 +107,23 @@ const wait = (milliseconds: number) =>
  * artifact, and done. Set speed to 0 in tests or while iterating.
  */
 export async function* streamAnswer(
-  _prompt: string,
+  prompt: string,
   options: { speed?: number } = {},
 ): AsyncGenerator<StreamEvent> {
   const speed = options.speed ?? 1;
   const pause = (milliseconds: number) =>
     speed === 0 ? Promise.resolve() : wait(milliseconds / speed);
+  const answer = answerFor(prompt);
 
   await pause(360);
-  yield { type: 'status', label: 'Reviewing 6 discovery calls' };
+  yield { type: 'status', label: answer.status };
 
-  for (const delta of ANSWER) {
+  for (const delta of answer.deltas) {
     await pause(460);
     yield { type: 'text', delta };
   }
 
   await pause(520);
-  yield COACHING_CARD;
+  yield answer.card;
   yield { type: 'done' };
 }

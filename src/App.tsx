@@ -50,6 +50,11 @@ const App: ReactFC = () => {
   const suppressFocusOpen = useRef(false);
   const panelScroll = usePanelScrollMemory(assistant.turns.length);
 
+  const askWithFocus = (question: string) => {
+    setPanelTakesFocus(true);
+    assistant.ask(question);
+  };
+
   const openWithFocus = () => {
     setPanelTakesFocus(true);
     assistant.open();
@@ -157,6 +162,7 @@ const App: ReactFC = () => {
                       unpinWithUndo(pin.turnId);
                       focusPromptBar();
                     }}
+                    onAskNextStep={askWithFocus}
                   />
                 ))}
               </div>
@@ -183,6 +189,7 @@ const App: ReactFC = () => {
           anchor={columnAnchor}
           onDismiss={dismissAssistant}
           pinned={assistant.pinned}
+          onAsk={askWithFocus}
           onPin={assistant.pin}
           onUnpin={unpinWithUndo}
         />
