@@ -112,7 +112,7 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
         <SheetContent
           side="right"
           // The same data-[side] selector as the sheet's default width, so this one can override it.
-          className="overflow-y-auto data-[side=right]:w-[min(22rem,88vw)]"
+          className="scrollbar-stable overflow-y-auto data-[side=right]:w-[min(22rem,88vw)]"
           aria-describedby={undefined}
           onCloseAutoFocus={event => {
             const turnId = pendingJump.current;

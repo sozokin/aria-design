@@ -138,6 +138,13 @@
   mask-image: linear-gradient(to bottom, black calc(100% - 2.75rem), transparent);
 }
 
+/* A vertical scroll region that keeps its scrollbar's lane even while there is nothing to scroll,
+   so content never shifts when a scrollbar arrives. Not for boxes that only clip: the lane would
+   be reserved there too. The scrollbar itself is styled for the whole shell in styles.css. */
+@utility scrollbar-stable {
+  scrollbar-gutter: stable;
+}
+
 :root {
   color-scheme: light;
 

@@ -24,7 +24,6 @@ import TeamOverviewDrawer from '@/widgets/TeamOverview/TeamOverviewDrawer';
 import useAssistant, { UNDO_WINDOW_MS } from '@/hooks/useAssistant';
 import useColumnAnchor from '@/hooks/useColumnAnchor';
 import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
-import useNeedsBarClearance from '@/hooks/useNeedsBarClearance';
 import usePanelScrollMemory from '@/hooks/usePanelScrollMemory';
 import useRailCollapse, { RAIL_TOGGLE_SLOT_ID } from '@/hooks/useRailCollapse';
 import { cn } from '@/lib/utils';
@@ -38,12 +37,9 @@ const App: ReactFC = () => {
   const assistant = useAssistant();
   const rail = useRailCollapse(isDesktop);
 
-  const mainRef = useRef<HTMLElement>(null);
-  const mainInnerRef = useRef<HTMLDivElement>(null);
   const columnRef = useRef<HTMLDivElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const columnAnchor = useColumnAnchor(columnRef);
-  useNeedsBarClearance(mainRef, mainInnerRef);
 
   const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
   // The bar starts empty; the opening question is offered by the brief's suggested next step chip.
@@ -176,13 +172,14 @@ const App: ReactFC = () => {
         isDesktop={isDesktop}
       />
 
-      <main ref={mainRef} className="main" id="top">
+      <main className="main" id="top">
         {/* One layout context for the dashboard and the panel, so a pinned card's shared layoutId
             can fly from the panel into the dashboard. */}
         <LayoutGroup>
-          <div ref={mainInnerRef} className="main-inner">
-            <div className="grid gap-x-10 gap-y-8 shell:grid-cols-[minmax(0,1fr)_17rem]">
-              <div ref={columnRef} className="min-w-0">
+          <div className="main-inner">
+            {/* On desktop the column and the rail scroll on their own (styles.css, .dashboard-*). */}
+            <div className="dashboard grid gap-x-10 gap-y-8 shell:grid-cols-[minmax(0,1fr)_17rem]">
+              <div ref={columnRef} className="dashboard-column min-w-0">
                 <div className="greeting-row">
                   <div
                     id={RAIL_TOGGLE_SLOT_ID}
@@ -260,7 +257,7 @@ const App: ReactFC = () => {
 
               {isDesktop && (
                 <aside
-                  className="flex flex-col gap-6 pt-1"
+                  className="dashboard-rail flex flex-col gap-6 pt-1"
                   aria-label="Team overview and pinned answers"
                 >
                   <div className="flex flex-col items-end gap-1.5">

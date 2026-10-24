@@ -275,7 +275,7 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
               <Plus data-icon="inline-start" aria-hidden="true" />
               New chat
             </Button>
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="min-h-0 flex-1 scrollbar-stable overflow-y-auto">
               <ChatList chats={chats} activeChatId={activeChatId} onSwitchChat={onSwitchChat} />
             </div>
           </motion.aside>
@@ -356,7 +356,7 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
             // Relative so it is the turns' offsetParent: their offsetTop is then measured from the
             // scroll area, not from the dialog with its header.
             className={cn(
-              'relative min-h-0 shrink overflow-y-auto overscroll-contain data-[overflow=true]:scroll-fade',
+              'relative min-h-0 shrink scrollbar-stable overflow-y-auto overscroll-contain data-[overflow=true]:scroll-fade',
               shownExpanded && 'flex-1',
             )}
             initial={false}
