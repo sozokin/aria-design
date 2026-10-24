@@ -19,6 +19,14 @@ const MAX_LINES = 3;
 const LINE_REM = 1.5;
 const PADDING_REM = { oneLine: 1.625, multiline: 2.25 };
 
+// What the send button will do, which its arrow points at: up to open the panel, at the text to
+// ask it, down to close the panel.
+const SEND_LABEL = {
+  open: 'Open AI Assistant',
+  ask: 'Ask AI Assistant',
+  close: 'Close AI Assistant',
+};
+
 /** The bar's height for a number of shown lines: the lines, the field's padding and the bar's borders. One line is the shell's 3.25rem. */
 export const promptBarHeight = (lines: number) =>
   `${lines * LINE_REM + (lines > 1 ? PADDING_REM.multiline : PADDING_REM.oneLine) + 0.125}rem`;
@@ -27,8 +35,10 @@ export const promptBarHeight = (lines: number) =>
  * The shell's AI Assistant entry point: the floating bar at the bottom centre of every page, with
  * the new-chat button beside it in a pill of its own that matches the bar. The field is one line
  * until the question needs more: it then grows to three lines, and beyond that scrolls, keeping the
- * line being typed at the bottom while the lines above fade out at the top. On desktop Enter asks
- * and Shift+Enter starts a line; on mobile Enter only starts a line, and the send button asks.
+ * line being typed at the bottom while the lines above fade out at the top. The send button does
+ * what its arrow shows: with text it asks (arrow at the text), with an empty bar it opens the panel
+ * (up) or closes it (down). On desktop Enter does the same and Shift+Enter starts a line; on mobile
+ * Enter only starts a line.
  */
 const PromptBar: ReactFC<IPromptBar> = ({
   ref,
@@ -53,6 +63,7 @@ const PromptBar: ReactFC<IPromptBar> = ({
     : null;
 
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
+  const intent = value.trim() ? 'ask' : isPanelOpen ? 'close' : 'open';
   const [mirror, setMirror] = useState<HTMLDivElement | null>(null);
   const lines = useTextLines(mirror, value);
   const shownLines = Math.min(lines, MAX_LINES);
@@ -158,7 +169,12 @@ const PromptBar: ReactFC<IPromptBar> = ({
         >
           <Icons.mic data-icon="inline-only" />
         </button>
-        <button className="icon-button primary" type="submit" aria-label="Ask AI Assistant">
+        <button
+          className="icon-button primary"
+          type="submit"
+          aria-label={SEND_LABEL[intent]}
+          data-intent={intent}
+        >
           <Icons.arrowUp data-icon="inline-only" />
         </button>
       </form>
