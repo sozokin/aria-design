@@ -54,7 +54,7 @@ function useAssistant(): IAssistant {
   // Unpinned cards that can still be undone, by turn id. A ref: the toasts read it, nothing renders it.
   const undoable = useRef(new Map<string, IUndoable>());
   // What waits for the panel to leave the screen (a pin on mobile, where there is no glide to
-  // follow), so the dashboard changes in view rather than behind the panel.
+  // follow; an unpin asked from the chat), so the dashboard changes in view, not behind the panel.
   const afterClose = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -212,7 +212,7 @@ function useAssistant(): IAssistant {
     setPinned(current => {
       if (current.some(pinnedTurn => pinnedTurn.turnId === turnId)) return current;
       const at = Math.min(entry.index, current.length);
-      return [...current.slice(0, at), entry.turn, ...current.slice(at)];
+      return [...current.slice(0, at), { ...entry.turn, restored: true }, ...current.slice(at)];
     });
     announce('Coaching card pinned to your dashboard again.');
   };
