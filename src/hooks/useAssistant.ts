@@ -39,13 +39,15 @@ function useAssistant(): IAssistant {
   const [isExpanded, setIsExpanded] = useState(false);
   // Cards on the dashboard, newest first. Kept here so they outlive the panel.
   const [pinned, setPinned] = useState<IPinnedTurn[]>([]);
-  // An answer finished while the panel was closed; the prompt bar shows "Answer ready".
-  const [hasUnseenAnswer, setHasUnseenAnswer] = useState(false);
+  // The chat whose answer finished out of view (behind a closed panel, or while another chat was
+  // active) and has not been looked at since; the prompt bar shows "Answer ready" for it.
+  const [unseenChatId, setUnseenChatId] = useState<string | null>(null);
   // What the live region says next: the status, then "Answer ready". Text chunks are not announced.
   const [announcement, setAnnouncement] = useState<IAnnouncement | null>(null);
 
-  // The stream reads this when it finishes, long after the render that started it.
+  // The stream reads these when it finishes, long after the render that started it.
   const isOpenRef = useRef(false);
+  const activeChatIdRef = useRef(activeChatId);
   // Number the turns' and chats' ids. Refs, because a new id never needs a re-render.
   const turnCount = useRef(0);
   const chatCount = useRef(1);
@@ -54,17 +56,23 @@ function useAssistant(): IAssistant {
 
   useEffect(() => {
     isOpenRef.current = isOpen;
-  }, [isOpen]);
+    activeChatIdRef.current = activeChatId;
+  }, [isOpen, activeChatId]);
 
   // A fresh id makes the live region repeat a message even when its text is unchanged.
   const announce = useCallback((text: string) => setAnnouncement({ id: Date.now(), text }), []);
 
   const turns = allTurns.filter(turn => turn.chatId === activeChatId);
   const chats = chatSummaries(allTurns);
+  // An answer still arriving where the reader is not looking: in another chat, or behind a closed
+  // panel. The prompt bar shows a pulse for it.
+  const isAnswering = allTurns.some(
+    turn => turn.phase !== 'complete' && (turn.chatId !== activeChatId || !isOpen),
+  );
 
   // Pulls one answer from the mock stream into its turn, event by event.
   const consume = useCallback(
-    async (id: string, prompt: string) => {
+    async (id: string, chatId: string, prompt: string) => {
       let card: CoachingCard | null = null;
 
       for await (const event of streamAnswer(prompt)) {
@@ -81,7 +89,8 @@ function useAssistant(): IAssistant {
               ? `Answer ready. Coaching card for ${card.rep} with ${card.rows.length} scored skills.`
               : 'Answer ready.',
           );
-          if (!isOpenRef.current) setHasUnseenAnswer(true);
+          // Finished out of view: behind a closed panel, or in a chat the reader has left.
+          if (!isOpenRef.current || activeChatIdRef.current !== chatId) setUnseenChatId(chatId);
         }
       }
     },
@@ -95,17 +104,17 @@ function useAssistant(): IAssistant {
       const id = `turn-${++turnCount.current}`;
       setAllTurns(all => [...all, createTurn(id, activeChatId, prompt)]);
       setIsOpen(true);
-      setHasUnseenAnswer(false);
-      void consume(id, prompt);
+      setUnseenChatId(unseen => (unseen === activeChatId ? null : unseen));
+      void consume(id, activeChatId, prompt);
     },
     [consume, activeChatId],
   );
 
-  // Back to the existing conversation without asking anything; looking at it clears "unseen".
+  // Back to the active chat without asking anything; looking at it clears its "unseen".
   const open = useCallback(() => {
     setIsOpen(true);
-    setHasUnseenAnswer(false);
-  }, []);
+    setUnseenChatId(unseen => (unseen === activeChatId ? null : unseen));
+  }, [activeChatId]);
 
   // Only hides the panel: the turns and any running stream are left alone.
   const close = useCallback(() => setIsOpen(false), []);
@@ -116,7 +125,6 @@ function useAssistant(): IAssistant {
   const newChat = () => {
     if (turns.length > 0) setActiveChatId(`chat-${++chatCount.current}`);
     setIsOpen(true);
-    setHasUnseenAnswer(false);
     announce('New chat. How can I help?');
   };
 
@@ -125,9 +133,17 @@ function useAssistant(): IAssistant {
   const switchChat = (chatId: string) => {
     setActiveChatId(chatId);
     setIsOpen(true);
-    setHasUnseenAnswer(false);
+    setUnseenChatId(unseen => (unseen === chatId ? null : unseen));
     const title = chats.find(chat => chat.id === chatId)?.title;
     if (title) announce(`Opened chat: ${title}`);
+  };
+
+  // The "Answer ready" pill: shows the chat whose answer finished out of view, switching to it if
+  // the reader has moved on to another chat since.
+  const openUnseenAnswer = () => {
+    if (!unseenChatId) return;
+    if (unseenChatId === activeChatId) open();
+    else switchChat(unseenChatId);
   };
 
   // Newest pin goes on top, and the panel closes so the card can be seen settling on the dashboard.
@@ -188,7 +204,8 @@ function useAssistant(): IAssistant {
     chats,
     isOpen,
     isExpanded,
-    hasUnseenAnswer,
+    isAnswering,
+    hasUnseenAnswer: unseenChatId !== null,
     announcement,
     pinned,
     ask,
@@ -197,6 +214,7 @@ function useAssistant(): IAssistant {
     setExpanded: setIsExpanded,
     newChat,
     switchChat,
+    openUnseenAnswer,
     pin,
     unpin,
     undoUnpin,

@@ -37,6 +37,21 @@ const ChatList: ReactFC<IChatList> = ({ chats, activeChatId, onSwitchChat }) => 
                 isActive ? 'border-accent/30 bg-accent-muted' : 'border-border bg-secondary',
               )}
             >
+              {/* An answer still arriving in this chat: the accent dot, glowing the way the
+                  "Answer ready" pill does, so the chat can be found from the list. */}
+              {chat.isAnswering && (
+                <span className="relative flex size-1.5 shrink-0">
+                  <span
+                    className="absolute inset-0 rounded-full ring-2 ring-accent motion-safe:animate-ready-pulse"
+                    aria-hidden="true"
+                  />
+                  <span
+                    className="size-1.5 rounded-full bg-accent motion-safe:animate-pulse"
+                    aria-hidden="true"
+                  />
+                  <span className="sr-only">Answer in progress. </span>
+                </span>
+              )}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[0.8125rem] font-semibold">{chat.title}</span>
                 <span className="block truncate text-xs text-text-secondary">

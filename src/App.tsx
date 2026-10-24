@@ -48,7 +48,6 @@ const App: ReactFC = () => {
   const [promptLines, setPromptLines] = useState(1);
 
   const thread = assistant.turns[0];
-  const latestTurn = assistant.turns[assistant.turns.length - 1];
   // The brief's suggested next step mirrors the latest answer's; before any answer it is the
   // question that produces one.
   const latestCard = [...assistant.turns].reverse().find(turn => turn.card)?.card;
@@ -66,9 +65,10 @@ const App: ReactFC = () => {
     assistant.ask(question);
   };
 
-  const openWithFocus = () => {
+  // The bar's "Answer ready" pill: the answer that finished out of view, in whichever chat.
+  const openUnseenAnswer = () => {
     setPanelTakesFocus(true);
-    assistant.open();
+    assistant.openUnseenAnswer();
   };
 
   // The send button does what its arrow shows (and Enter on desktop with it): with text in the bar
@@ -312,10 +312,10 @@ const App: ReactFC = () => {
         onInteract={reopenFromBar}
         hasThread={thread !== undefined}
         anchor={columnAnchor}
-        latestTurn={latestTurn}
         isPanelOpen={assistant.isOpen}
+        isAnswering={assistant.isAnswering}
         hasUnseenAnswer={assistant.hasUnseenAnswer}
-        onReopen={openWithFocus}
+        onReopen={openUnseenAnswer}
         onNewChat={startNewChat}
         onLinesChange={setPromptLines}
       />

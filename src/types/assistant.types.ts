@@ -27,6 +27,8 @@ export interface IChatSummary {
   turnCount: number;
   /** Who the latest coaching card is about, once one has arrived. */
   rep: string | null;
+  /** An answer is still arriving in this chat. */
+  isAnswering: boolean;
 }
 
 /** A turn's coaching card once it is pinned to the dashboard. */
@@ -68,9 +70,14 @@ export interface IAssistant {
    */
   isExpanded: boolean;
   /**
-   * An answer finished while the panel was closed and has not been looked at since. Drives the
-   * prompt bar's "Answer ready" pill. Not derivable from `isOpen` and the turn's phase, which read
-   * the same after the answer has been seen and the panel closed again.
+   * An answer is still arriving where the reader is not looking: in another chat, or behind a
+   * closed panel. Drives the prompt bar's pulse.
+   */
+  isAnswering: boolean;
+  /**
+   * An answer finished out of view (behind a closed panel, or in a chat the reader had left) and
+   * has not been looked at since. Drives the prompt bar's "Answer ready" pill. Not derivable from
+   * `isOpen` and the turns' phases, which read the same once the answer has been seen.
    */
   hasUnseenAnswer: boolean;
   /**
@@ -99,6 +106,8 @@ export interface IAssistant {
   newChat: () => void;
   /** Makes an earlier chat active and opens the panel on it. */
   switchChat: (chatId: string) => void;
+  /** Shows the answer that finished out of view, switching to its chat if the reader has moved on. */
+  openUnseenAnswer: () => void;
   /** Pins a turn's card to the top of the dashboard and closes the panel. Ignored without a card. */
   pin: (turn: ITurn) => void;
   /**
