@@ -30,6 +30,22 @@ a { color: inherit; text-decoration: none; }
 svg { flex: none; }
 .app-shell .lucide { stroke-width: 1.5; }
 
+/* Scrollbars, wherever one appears: thin, faint and rounded like macOS's, on no track. WebKit and
+   Chromium take the pseudo-elements; the standard properties go only to engines without them
+   (Firefox), because Chromium drops the pseudo-element styling once those are set. Regions that
+   must not shift when a scrollbar arrives reserve its lane with scrollbar-gutter where they are
+   declared (the dashboard below, and the `scrollbar-stable` utility in index.css). */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent; border-radius: var(--radius-full); background-clip: padding-box;
+  background-color: color-mix(in oklch, var(--foreground) 14%, transparent);
+}
+::-webkit-scrollbar-thumb:hover { background-color: color-mix(in oklch, var(--foreground) 26%, transparent); }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: color-mix(in oklch, var(--foreground) 14%, transparent) transparent; }
+}
+
 /* App frame */
 .app-shell { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
 .app-shell.sidebar-compact { --sidebar-w: 4.5rem; }
@@ -156,10 +172,28 @@ svg { flex: none; }
 
 /* Main */
 .main { min-width: 0; padding: 2.25rem clamp(1.25rem, 4vw, 3.5rem); }
-/* Room to scroll the last content clear of the floating prompt bar, only when the page scrolls at all.
-   Mobile always scrolls and keeps its own clearance below. */
-@media (min-width: 761px) { .main[data-needs-bar-clearance="true"] { padding-bottom: 8rem; } }
 .main-inner { max-width: var(--content-max); margin: 0 auto; }
+/* Desktop: the page itself does not scroll. The dashboard column and the rail are each a scroll
+   region of their own, so pinned answers and the team's stats scroll independently. Mobile keeps
+   the single page scroll, with the rail inline and its own clearance below. */
+@media (min-width: 761px) {
+  .main { height: 100vh; overflow: hidden; }
+  .main-inner { display: flex; flex-direction: column; height: 100%; }
+  .dashboard { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+  .dashboard-column, .dashboard-rail {
+    /* Positioned, so absolutely placed descendants (screen-reader-only text, say) are contained
+       and clipped here rather than reaching the page and giving it a scroll of its own. */
+    position: relative; min-height: 0; overflow: hidden auto;
+    /* The scrollbar's lane is always reserved, so content keeps its width whether or not there is
+       anything to scroll: no shift when the first pinned answer arrives. */
+    scrollbar-gutter: stable;
+    /* Focus rings reach past the content's edges; this keeps the overflow from clipping them. */
+    padding-inline: 0.25rem; margin-inline: -0.25rem;
+  }
+  /* The column's last content can scroll clear of the floating prompt bar, whatever its height. */
+  .dashboard-column { padding-bottom: calc(var(--prompt-bar-h) + 1.5rem); }
+  .dashboard-rail { padding-bottom: 1rem; }
+}
 @media (min-width: 761px) and (min-height: 720px) {
   .main-inner { padding-top: clamp(1rem, 4vh, 2.5rem); }
 }
@@ -339,6 +373,7 @@ svg { flex: none; }
   .brief-lead { font-size: 1.0625rem; }
   .hover-card { width: min(17rem, calc(100vw - 2rem)); }
   .stat-grid { display: flex; overflow-x: auto; gap: 0.75rem; margin: 0 -1rem; padding: 0 1rem 0.5rem; scroll-snap-type: x mandatory; scroll-padding-inline: 1rem; scrollbar-width: none; }
+  .stat-grid::-webkit-scrollbar { display: none; }
   .stat { flex: 0 0 72%; scroll-snap-align: start; }
   .assistant-trigger {
     /* Room on the right for the new-chat pill (3.25rem) and the gap to it. */

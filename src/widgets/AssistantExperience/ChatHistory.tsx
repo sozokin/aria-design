@@ -47,7 +47,7 @@ const ChatHistory: ReactFC<IChatHistory> = ({ chats, activeChatId, onSwitchChat,
       <SheetContent
         side="right"
         // The same data-[side] selector as the sheet's default width, so this one can override it.
-        className="overflow-y-auto data-[side=right]:w-[min(22rem,88vw)]"
+        className="scrollbar-stable overflow-y-auto data-[side=right]:w-[min(22rem,88vw)]"
       >
         <SheetHeader className="pb-0">
           <SheetTitle>Chat history</SheetTitle>
