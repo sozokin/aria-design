@@ -7,15 +7,24 @@ import AnswerTurn from './AnswerTurn';
 
 import useElementHeight from '@/hooks/useElementHeight';
 import useHasMoreBelow from '@/hooks/useHasMoreBelow';
+import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
 import { EASE_OUT } from '@/lib/motion';
 
 import { IAssistantPanel } from './AssistantExperience.types';
 
 // Rises a little and settles, so it reads as coming up from the prompt bar below it.
-const ENTRANCE = {
+const DESKTOP_ENTRANCE = {
   initial: { opacity: 0, y: 16, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
   exit: { opacity: 0, y: 8, scale: 0.98 },
+};
+
+// No scale on mobile: scaling a large shadowed surface re-rasterises every frame on iOS WebKit,
+// which is what made the entrance stutter.
+const MOBILE_ENTRANCE = {
+  initial: { opacity: 0, y: 28 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 20 },
 };
 
 /**
@@ -46,6 +55,8 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
   const resumedScroll = useRef(false);
 
   const reduceMotion = useReducedMotion();
+  const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
+  const entrance = isDesktop ? DESKTOP_ENTRANCE : MOBILE_ENTRANCE;
   const contentHeight = useElementHeight(contentRef);
   const hasMoreBelow = useHasMoreBelow(scrollRef, contentHeight);
   // The bottom fade and the height animation wait until the entrance has finished, so they never
@@ -104,9 +115,9 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
       tabIndex={-1}
       style={anchor ? { left: anchor.left, width: anchor.width } : undefined}
       className="fixed inset-x-3 top-8 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-(--z-assistant) flex flex-col rounded-2xl border border-border bg-popover text-popover-foreground shadow-md will-change-transform outline-none shell:inset-x-auto shell:top-[calc(100dvh-5.75rem-var(--assistant-panel-max))] shell:bottom-auto shell:max-h-(--assistant-panel-max) shell:shadow-lg"
-      initial={ENTRANCE.initial}
-      animate={ENTRANCE.animate}
-      exit={{ ...ENTRANCE.exit, transition: { duration: 0.22, ease: EASE_OUT } }}
+      initial={entrance.initial}
+      animate={entrance.animate}
+      exit={{ ...entrance.exit, transition: { duration: 0.22, ease: EASE_OUT } }}
       transition={{ duration: 0.38, ease: EASE_OUT }}
       onAnimationComplete={() => setHasEntered(true)}
     >

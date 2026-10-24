@@ -295,6 +295,10 @@ svg { flex: none; }
   .hover-card { width: min(17rem, calc(100vw - 2rem)); }
   .stat-grid { display: flex; overflow-x: auto; gap: 0.75rem; margin: 0 -1rem; padding: 0 1rem 0.5rem; scroll-snap-type: x mandatory; scroll-padding-inline: 1rem; scrollbar-width: none; }
   .stat { flex: 0 0 72%; scroll-snap-align: start; }
-  .assistant-trigger { left: 0.75rem; right: 0.75rem; width: auto; transform: none; bottom: 0.75rem; }
+  .assistant-trigger {
+    left: 0.75rem; right: 0.75rem; width: auto; transform: none;
+    /* Clear the home indicator, with the same 20px gap above it as everywhere else. */
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  }
   .assistant-placeholder { left: 0.75rem; right: 0.75rem; width: auto; transform: none; bottom: 4.75rem; flex-direction: column; align-items: stretch; gap: 0.875rem; }
 }
