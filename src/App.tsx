@@ -6,11 +6,12 @@
  * <AssistantExperience />. Small shell integration changes are welcome when
  * they help the proposed experience feel coherent.
  */
-import { useRef, useState, type CSSProperties } from 'react';
+import { useRef, useState } from 'react';
 import { AssistantExperience } from './AssistantExperience';
 import Brief from '@/widgets/Brief';
 import PromptBar from '@/widgets/PromptBar';
 import Sidebar from '@/widgets/Sidebar';
+import TeamOverview from '@/widgets/TeamOverview';
 
 import useColumnAnchor from '@/hooks/useColumnAnchor';
 import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
@@ -19,29 +20,7 @@ import { cn } from '@/lib/utils';
 
 export const DEFAULT_PROMPT = 'How is Marcus doing on discovery calls this quarter?';
 
-const overviewSignals = [
-  {
-    label: 'Calls reviewed',
-    value: '18',
-    context: 'this week',
-    trend: [42, 54, 48, 68, 74, 100],
-    note: 'Five reps have new moments ready to review.',
-  },
-  {
-    label: 'Coaching follow-ups',
-    value: '4',
-    context: 'open',
-    trend: [56, 72, 62, 78, 70, 88],
-    note: 'Lena and Didi have check-ins scheduled today.',
-  },
-  {
-    label: 'Deals needing attention',
-    value: '3',
-    context: 'active',
-    trend: [88, 76, 82, 68, 58, 52],
-    note: 'Brookfield and Percepto have follow-ups this week.',
-  },
-] as const;
+const TODAY = 'Today · Friday, September 4';
 
 export function App() {
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
@@ -79,47 +58,34 @@ export function App() {
 
       <main ref={mainRef} className="main" id="top">
         <div ref={mainInnerRef} className="main-inner">
-          <div ref={columnRef} className="min-w-0">
-            <div className="greeting-row">
-              <h1 className="greeting">Good to see you, Jordan.</h1>
-              <p className="date-eyebrow">Today · Friday, September 4</p>
+          <div className="grid gap-x-10 gap-y-8 shell:grid-cols-[minmax(0,1fr)_17rem]">
+            <div ref={columnRef} className="min-w-0">
+              <div className="greeting-row">
+                <h1 className="greeting">Good to see you, Jordan.</h1>
+                <p className="date-eyebrow shell:hidden">{TODAY}</p>
+              </div>
+
+              <div className="content">
+                <Brief />
+
+                {/* On mobile the team overview sits under the brief; on desktop it is the right rail. */}
+                {!isDesktop && (
+                  <div className="section flex flex-col gap-6">
+                    <TeamOverview variant="inline" />
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="content">
-              <Brief />
-
-              <section className="section" aria-labelledby="signals-title">
-                <div className="section-head">
-                  <h2 id="signals-title" className="section-title">
-                    Team overview
-                  </h2>
-                  <span className="section-meta">Today · 6 reps · 12 active deals</span>
-                </div>
-                <div className="stat-grid">
-                  {overviewSignals.map(signal => (
-                    <article
-                      className="stat"
-                      key={signal.label}
-                      aria-label={`${signal.label}: ${signal.value} ${signal.context}`}
-                    >
-                      <div className="stat-head">
-                        <span className="stat-skill">{signal.label}</span>
-                      </div>
-                      <div className="stat-value-row">
-                        <span className="stat-value">{signal.value}</span>
-                        <span className="stat-context">{signal.context}</span>
-                      </div>
-                      <div className="bars" aria-hidden="true">
-                        {signal.trend.map((height, index) => (
-                          <span key={index} style={{ '--h': `${height}%` } as CSSProperties} />
-                        ))}
-                      </div>
-                      <p className="stat-note">{signal.note}</p>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            </div>
+            {isDesktop && (
+              <aside
+                className="flex flex-col gap-6 pt-1"
+                aria-label="Team overview and pinned answers"
+              >
+                <p className="date-eyebrow text-right">{TODAY}</p>
+                <TeamOverview />
+              </aside>
+            )}
           </div>
         </div>
 
