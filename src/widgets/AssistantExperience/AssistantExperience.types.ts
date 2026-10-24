@@ -49,6 +49,8 @@ export interface IAssistantPanel extends IChatList {
 export interface IAssistantExperience extends IAssistantPanel {
   /** Whether the answer surface is showing. The host owns this. */
   isOpen: boolean;
+  /** The surface has finished leaving: the host runs what waited for that. */
+  onClosed: () => void;
 }
 
 export interface IAnswerTurn {
@@ -117,6 +119,12 @@ export interface INextStepChip {
 
 export interface IPinnedAnswer {
   pinned: IPinnedTurn;
+  /**
+   * Whether the card carries the shared layout id, so it glides in from where it was in the panel.
+   * Off on mobile: there the slot is below the fold and the page scrolls to it, so the card rises
+   * into place as the scroll settles instead of gliding against it.
+   */
+  shareCardLayout: boolean;
   onUnpin: () => void;
   onAskNextStep: (question: string) => void;
 }

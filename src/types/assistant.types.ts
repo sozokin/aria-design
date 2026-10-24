@@ -97,6 +97,14 @@ export interface IAssistant {
   open: () => void;
   /** Hides the panel. Leaves the turns and any running stream untouched. */
   close: () => void;
+  /**
+   * Hides the panel and runs `action` once it has left the screen (the host reports that with
+   * `onClosed`), so a change to the dashboard is seen on the dashboard, not behind the panel. Runs
+   * `action` at once when the panel is not showing.
+   */
+  closeThen: (action: () => void) => void;
+  /** The host's word that the panel's exit has finished; runs what `closeThen` left waiting. */
+  onClosed: () => void;
   /** Expands the panel to most of the screen, or brings it back to its usual size. */
   setExpanded: (expanded: boolean) => void;
   /**
