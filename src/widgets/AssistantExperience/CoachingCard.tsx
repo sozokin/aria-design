@@ -1,4 +1,4 @@
-import { useId, type FC as ReactFC } from 'react';
+import { useId, useState, type FC as ReactFC } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { Pin, PinOff } from 'lucide-react';
 
@@ -41,6 +41,11 @@ const CoachingCard: ReactFC<ICoachingCard> = ({
   const lowest = lowestRow(card.rows);
   // Reduced motion keeps the stagger of the rows' fades but opens every part at once.
   const unfoldsInSteps = unfold && !reduceMotion;
+  // True until the last part has opened. The parts change the box's height every frame while
+  // they open, and the box re-renders along with the panel as they do, so a size animation on
+  // the box would fight them; once they are open, the box animates its size again, which is
+  // what carries it to the dashboard on a pin.
+  const [isUnfolding, setIsUnfolding] = useState(unfoldsInSteps);
 
   // One part of the card opening from nothing to its height, in its turn.
   const opening = (order: number) =>
@@ -55,9 +60,7 @@ const CoachingCard: ReactFC<ICoachingCard> = ({
   return (
     <motion.article
       layoutId={layoutId}
-      // Position only: the parts opening change the height every frame, and the box re-renders
-      // along with the panel while they do, so a size animation here would fight them.
-      layout="position"
+      layout={isUnfolding ? 'position' : true}
       transition={{ layout: { duration: 0.5, ease: EASE_OUT } }}
       className={cn(
         'rounded-xl border border-border bg-card shadow-xs',
@@ -141,7 +144,11 @@ const CoachingCard: ReactFC<ICoachingCard> = ({
         </motion.div>
       ))}
 
-      <motion.div className="overflow-hidden" {...opening(groups.length)}>
+      <motion.div
+        className="overflow-hidden"
+        {...opening(groups.length)}
+        onAnimationComplete={() => setIsUnfolding(false)}
+      >
         <footer className="border-t border-border px-4 py-3">
           <p className="text-xs font-semibold text-accent-muted-foreground">Suggested next step</p>
           <NextStepChip text={card.nextStep} onAsk={onAskNextStep} />
