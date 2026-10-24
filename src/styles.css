@@ -279,6 +279,19 @@ svg { flex: none; }
   box-shadow: 0 0 0 1px color-mix(in oklch, var(--accent) 14%, transparent), var(--shadow-lg); /* floats clear of the content behind it */
   transition: box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out);
 }
+/* First paint: the bar rises from the bottom last of all, the piece the page is about. PromptBar
+   sets the delay and duration from LOAD_IN. `translate`, not `transform`: the bar is centred with a
+   transform, which the rise must leave alone. */
+@keyframes bar-rise {
+  from { opacity: 0; translate: 0 1.5rem; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes bar-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.assistant-trigger { animation: bar-rise var(--duration-slow) var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) { .assistant-trigger { animation-name: bar-fade; } }
 /* While the new-chat pill comes or goes, the bar's edges glide to make or take back its room. Only
    then: the bar also follows the column as it resizes, which must not lag behind it. */
 .assistant-trigger[data-gliding="true"] {

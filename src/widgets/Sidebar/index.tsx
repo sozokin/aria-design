@@ -6,6 +6,7 @@ import MobileNav from './MobileNav';
 import UserMenuButton from './UserMenuButton';
 
 import useSearchShortcut from '@/hooks/useSearchShortcut';
+import { EASE_OUT, LOAD_IN } from '@/lib/motion';
 import { PRIMARY_NAV, SECONDARY_NAV } from './nav';
 
 import { ISidebar } from './Sidebar.types';
@@ -31,7 +32,14 @@ const Sidebar: ReactFC<ISidebar> = ({ isCompact, onCompactChange, isDesktop }) =
 
   return (
     <>
-      <aside className="sidebar" aria-label="Primary">
+      {/* First paint: slides in from the left on desktop; on mobile the top bar settles from above. */}
+      <motion.aside
+        className="sidebar"
+        aria-label="Primary"
+        initial={{ opacity: 0, x: isDesktop ? -24 : 0, y: isDesktop ? 0 : -12 }}
+        animate={{ opacity: 1, x: 0, y: 0 }}
+        transition={{ duration: LOAD_IN.duration, ease: EASE_OUT }}
+      >
         <div className="brand-row">
           <a className="brand" href="#top" aria-label="Aria Sales Hub home">
             <img src="/aria-logo.png" alt="" width={26} height={26} />
@@ -108,7 +116,7 @@ const Sidebar: ReactFC<ISidebar> = ({ isCompact, onCompactChange, isDesktop }) =
         </div>
 
         {!isDesktop && <MobileNav open={mobileNavOpen} onClose={closeMobileNav} />}
-      </aside>
+      </motion.aside>
 
       {/* Dims the page while the mobile navigation is open; tapping it closes the menu. */}
       <AnimatePresence>

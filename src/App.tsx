@@ -26,6 +26,7 @@ import useColumnAnchor from '@/hooks/useColumnAnchor';
 import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
 import usePanelScrollMemory from '@/hooks/usePanelScrollMemory';
 import useRailCollapse, { RAIL_TOGGLE_SLOT_ID } from '@/hooks/useRailCollapse';
+import { LOAD_IN, loadIn } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_PROMPT = 'How is Marcus doing on discovery calls this quarter?';
@@ -191,7 +192,11 @@ const App: ReactFC = () => {
                     className="flex w-full items-center justify-between gap-3 shell:w-auto"
                   >
                     {/* Room on the right for the fixed menu toggle, so a long greeting never runs under it. */}
-                    <h1 className="greeting pr-10 shell:pr-0">Good to see you, Jordan.</h1>
+                    {/* The heading alone, not its row: the row holds the mobile menu toggle's slot,
+                        whose position is measured on mount and must not be mid-move. */}
+                    <motion.h1 className="greeting pr-10 shell:pr-0" {...loadIn(LOAD_IN.greeting)}>
+                      Good to see you, Jordan.
+                    </motion.h1>
                     {!isDesktop && rail.toggleAnchor && (
                       <TeamOverviewDrawer
                         anchor={rail.toggleAnchor}
@@ -205,7 +210,9 @@ const App: ReactFC = () => {
                       />
                     )}
                   </div>
-                  <p className="date-eyebrow shell:hidden">{TODAY}</p>
+                  <motion.p className="date-eyebrow shell:hidden" {...loadIn(LOAD_IN.greeting)}>
+                    {TODAY}
+                  </motion.p>
                 </div>
 
                 <div className="content">
@@ -219,12 +226,10 @@ const App: ReactFC = () => {
                   />
 
                   {/* On mobile the team overview also sits inline under the brief, until it is
-                      collapsed into the menu's toggle; on desktop it is the right rail. */}
-                  <AnimatePresence
-                    initial={false}
-                    custom={rail.flight}
-                    onExitComplete={rail.settlePage}
-                  >
+                      collapsed into the menu's toggle; on desktop it is the right rail. The presence
+                      wrapper is for the collapse exit; it lets the first paint through (no
+                      initial={false}), so the inline card can take its turn in the sequence. */}
+                  <AnimatePresence custom={rail.flight} onExitComplete={rail.settlePage}>
                     {!isDesktop && !rail.isCollapsed && (
                       <InlineTeamOverview
                         key="inline-team-overview"
@@ -265,7 +270,10 @@ const App: ReactFC = () => {
                   className="dashboard-rail flex flex-col gap-6 pt-1"
                   aria-label="Team overview and pinned answers"
                 >
-                  <div className="flex flex-col items-end gap-1.5">
+                  <motion.div
+                    className="flex flex-col items-end gap-1.5"
+                    {...loadIn(LOAD_IN.greeting)}
+                  >
                     <p className="date-eyebrow text-right">{TODAY}</p>
                     <ChatHistory
                       chats={assistant.chats}
@@ -273,7 +281,7 @@ const App: ReactFC = () => {
                       onSwitchChat={openChatFromHistory}
                       withLabel
                     />
-                  </div>
+                  </motion.div>
                   <TeamOverview pinned={assistant.pinned} onJumpToPinned={jumpToPinned} />
                 </aside>
               )}

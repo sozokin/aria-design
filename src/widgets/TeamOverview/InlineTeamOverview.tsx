@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import TeamOverview from '.';
 
 import { MOBILE_RAIL_ID } from '@/hooks/useRailCollapse';
-import { COLLAPSE_FLIGHT_EASE, COLLAPSE_TRANSITION, EASE_OUT } from '@/lib/motion';
+import { COLLAPSE_FLIGHT_EASE, COLLAPSE_TRANSITION, EASE_OUT, LOAD_IN, loadIn } from '@/lib/motion';
 
 import { ICollapseFlight } from '@/types/layout.types';
 import { IInlineTeamOverview } from './TeamOverview.types';
@@ -41,6 +41,8 @@ const InlineTeamOverview: ReactFC<IInlineTeamOverview> = ({
         aria-label="Team overview and pinned answers"
         className="flex flex-col gap-5 overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-xs"
         style={{ transformOrigin: 'center' }}
+        // First paint: the card fades in after the brief, and its contents follow inside it.
+        {...loadIn(LOAD_IN.rail)}
         variants={{
           exit: (flight: ICollapseFlight | null) =>
             flight && !reduceMotion
