@@ -10,4 +10,5 @@ export interface INavEntry {
 export interface ISidebar {
   isCompact: boolean;
   onCompactChange: (compact: boolean) => void;
+  isDesktop: boolean;
 }

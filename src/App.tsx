@@ -12,6 +12,7 @@ import EntityPreview from '@/components/EntityPreview';
 import Icons from '@/components/Icons';
 import Sidebar from '@/widgets/Sidebar';
 
+import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 
 export const DEFAULT_PROMPT = 'How is Marcus doing on discovery calls this quarter?';
@@ -41,6 +42,7 @@ const overviewSignals = [
 ] as const;
 
 export function App() {
+  const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [submittedPrompt, setSubmittedPrompt] = useState(DEFAULT_PROMPT);
   const [assistantIsOpen, setAssistantIsOpen] = useState(false);
@@ -61,7 +63,11 @@ export function App() {
 
   return (
     <div className={cn('app-shell', sidebarIsCompact ? 'sidebar-compact' : '')}>
-      <Sidebar isCompact={sidebarIsCompact} onCompactChange={setSidebarIsCompact} />
+      <Sidebar
+        isCompact={sidebarIsCompact}
+        onCompactChange={setSidebarIsCompact}
+        isDesktop={isDesktop}
+      />
 
       <main className="main" id="top">
         <div className="main-inner">
