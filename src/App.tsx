@@ -246,6 +246,7 @@ const App: ReactFC = () => {
                       <PinnedAnswer
                         key={pin.turnId}
                         pinned={pin}
+                        shareCardLayout={isDesktop}
                         onUnpin={() => {
                           unpinWithUndo(pin.turnId);
                           focusPromptBar();
@@ -304,9 +305,15 @@ const App: ReactFC = () => {
             onScrollChange={panelScroll.remember}
             anchor={columnAnchor}
             onDismiss={dismissAssistant}
+            onClosed={assistant.onClosed}
             pinned={assistant.pinned}
             onAsk={askWithFocus}
-            onPin={assistant.pin}
+            // Desktop: the card glides from the panel to its slot while the panel fades under it, one
+            // beat. Mobile has no glide (the slot is below the fold), so the sheet leaves first and
+            // the card then arrives on a dashboard that is in view.
+            onPin={turn =>
+              isDesktop ? assistant.pin(turn) : assistant.closeThen(() => assistant.pin(turn))
+            }
             onUnpin={unpinWithUndo}
           />
         </LayoutGroup>

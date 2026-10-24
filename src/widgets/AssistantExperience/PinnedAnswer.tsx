@@ -4,15 +4,24 @@ import { Pin } from 'lucide-react';
 
 import CoachingCard from './CoachingCard';
 
-import { COLLAPSE_TRANSITION } from '@/lib/motion';
+import { COLLAPSE_TRANSITION, EASE_OUT } from '@/lib/motion';
 
 import { IPinnedAnswer } from './AssistantExperience.types';
+
+/** Seconds after the pin lands before the card shows, when it does not glide in: time for the page's
+ * scroll towards its slot to be most of the way there. */
+const ARRIVE_DELAY = 0.3;
 
 /** DOM id of one pinned card, so the Pinned list can jump to it. */
 export const pinnedAnswerId = (turnId: string) => `pinned-answer-${turnId}`;
 
 /** A coaching card once it has settled into the dashboard. Several can stack, newest first. */
-const PinnedAnswer: ReactFC<IPinnedAnswer> = ({ pinned, onUnpin, onAskNextStep }) => {
+const PinnedAnswer: ReactFC<IPinnedAnswer> = ({
+  pinned,
+  shareCardLayout,
+  onUnpin,
+  onAskNextStep,
+}) => {
   const ref = useRef<HTMLElement>(null);
 
   // Pinning moves the card out from under the pointer, so focus follows it.
@@ -30,7 +39,14 @@ const PinnedAnswer: ReactFC<IPinnedAnswer> = ({ pinned, onUnpin, onAskNextStep }
       className="mt-7 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       // When content above it leaves (the team overview collapsing, another card unpinned), glide rather than jump.
       layout="position"
-      transition={{ layout: COLLAPSE_TRANSITION }}
+      // Without the glide, the card rises into its slot as the page's scroll towards it settles.
+      initial={shareCardLayout ? undefined : { opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        layout: COLLAPSE_TRANSITION,
+        opacity: { duration: 0.3, delay: ARRIVE_DELAY },
+        y: { duration: 0.45, delay: ARRIVE_DELAY, ease: EASE_OUT },
+      }}
       exit={{ opacity: 0, transition: { duration: 0.18 } }}
     >
       {/* The label appears once the card has landed, so it never flies in with it. */}
@@ -47,7 +63,7 @@ const PinnedAnswer: ReactFC<IPinnedAnswer> = ({ pinned, onUnpin, onAskNextStep }
       </motion.p>
       <CoachingCard
         card={pinned.card}
-        layoutId={`coaching-card-${pinned.turnId}`}
+        layoutId={shareCardLayout ? `coaching-card-${pinned.turnId}` : undefined}
         isPinned
         onTogglePin={onUnpin}
         onAskNextStep={onAskNextStep}

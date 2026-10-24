@@ -23,12 +23,13 @@ const AssistantExperience: ReactFC<IAssistantExperience> = ({
   isExpanded,
   onDismiss,
   onExpandedChange,
+  onClosed,
   ...panelProps
 }) => {
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onClosed}>
       {isOpen && (
         // The blur is a static layer and only the dim fades: animating the opacity of a
         // backdrop-filter re-blurs the whole page every frame, which stutters on iOS WebKit.

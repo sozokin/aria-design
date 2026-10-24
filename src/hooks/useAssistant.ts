@@ -53,6 +53,9 @@ function useAssistant(): IAssistant {
   const chatCount = useRef(1);
   // Unpinned cards that can still be undone, by turn id. A ref: the toasts read it, nothing renders it.
   const undoable = useRef(new Map<string, IUndoable>());
+  // What waits for the panel to leave the screen (a pin on mobile, where there is no glide to
+  // follow), so the dashboard changes in view rather than behind the panel.
+  const afterClose = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -118,6 +121,28 @@ function useAssistant(): IAssistant {
 
   // Only hides the panel: the turns and any running stream are left alone.
   const close = useCallback(() => setIsOpen(false), []);
+
+  // Hides the panel and holds `action` until the host reports the exit finished. With the panel
+  // already hidden there is nothing to wait for.
+  const closeThen = (action: () => void) => {
+    if (!isOpen) {
+      action();
+      return;
+    }
+    afterClose.current = action;
+    setIsOpen(false);
+  };
+
+  const onClosed = useCallback(() => {
+    const action = afterClose.current;
+    afterClose.current = null;
+    action?.();
+  }, []);
+
+  // Reopened before the exit could finish: that exit never reports, so the wait ends here.
+  useEffect(() => {
+    if (isOpen) onClosed();
+  }, [isOpen, onClosed]);
 
   // A fresh chat, opened on its empty state so the panel can ask how it can help. An active chat
   // that has not been asked anything is that fresh chat already, so then only the panel opens. The
@@ -211,6 +236,8 @@ function useAssistant(): IAssistant {
     ask,
     open,
     close,
+    closeThen,
+    onClosed,
     setExpanded: setIsExpanded,
     newChat,
     switchChat,
