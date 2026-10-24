@@ -8,11 +8,13 @@
  */
 import { useRef, useState, type CSSProperties } from 'react';
 import { AssistantExperience } from './AssistantExperience';
-import Icons from '@/components/Icons';
 import Brief from '@/widgets/Brief';
+import PromptBar from '@/widgets/PromptBar';
 import Sidebar from '@/widgets/Sidebar';
 
+import useColumnAnchor from '@/hooks/useColumnAnchor';
 import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
+import useNeedsBarClearance from '@/hooks/useNeedsBarClearance';
 import { cn } from '@/lib/utils';
 
 export const DEFAULT_PROMPT = 'How is Marcus doing on discovery calls this quarter?';
@@ -49,6 +51,12 @@ export function App() {
   const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
   const triggerRef = useRef<HTMLInputElement>(null);
 
+  const mainRef = useRef<HTMLElement>(null);
+  const mainInnerRef = useRef<HTMLDivElement>(null);
+  const columnRef = useRef<HTMLDivElement>(null);
+  const columnAnchor = useColumnAnchor(columnRef);
+  useNeedsBarClearance(mainRef, mainInnerRef);
+
   const invokeAssistant = (text?: string) => {
     const next = (text ?? prompt).trim() || DEFAULT_PROMPT;
     setPrompt(next);
@@ -69,47 +77,49 @@ export function App() {
         isDesktop={isDesktop}
       />
 
-      <main className="main" id="top">
-        <div className="main-inner">
-          <div className="greeting-row">
-            <h1 className="greeting">Good to see you, Jordan.</h1>
-            <p className="date-eyebrow">Today · Friday, September 4</p>
-          </div>
+      <main ref={mainRef} className="main" id="top">
+        <div ref={mainInnerRef} className="main-inner">
+          <div ref={columnRef} className="min-w-0">
+            <div className="greeting-row">
+              <h1 className="greeting">Good to see you, Jordan.</h1>
+              <p className="date-eyebrow">Today · Friday, September 4</p>
+            </div>
 
-          <div className="content">
-            <Brief />
+            <div className="content">
+              <Brief />
 
-            <section className="section" aria-labelledby="signals-title">
-              <div className="section-head">
-                <h2 id="signals-title" className="section-title">
-                  Team overview
-                </h2>
-                <span className="section-meta">Today · 6 reps · 12 active deals</span>
-              </div>
-              <div className="stat-grid">
-                {overviewSignals.map(signal => (
-                  <article
-                    className="stat"
-                    key={signal.label}
-                    aria-label={`${signal.label}: ${signal.value} ${signal.context}`}
-                  >
-                    <div className="stat-head">
-                      <span className="stat-skill">{signal.label}</span>
-                    </div>
-                    <div className="stat-value-row">
-                      <span className="stat-value">{signal.value}</span>
-                      <span className="stat-context">{signal.context}</span>
-                    </div>
-                    <div className="bars" aria-hidden="true">
-                      {signal.trend.map((height, index) => (
-                        <span key={index} style={{ '--h': `${height}%` } as CSSProperties} />
-                      ))}
-                    </div>
-                    <p className="stat-note">{signal.note}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
+              <section className="section" aria-labelledby="signals-title">
+                <div className="section-head">
+                  <h2 id="signals-title" className="section-title">
+                    Team overview
+                  </h2>
+                  <span className="section-meta">Today · 6 reps · 12 active deals</span>
+                </div>
+                <div className="stat-grid">
+                  {overviewSignals.map(signal => (
+                    <article
+                      className="stat"
+                      key={signal.label}
+                      aria-label={`${signal.label}: ${signal.value} ${signal.context}`}
+                    >
+                      <div className="stat-head">
+                        <span className="stat-skill">{signal.label}</span>
+                      </div>
+                      <div className="stat-value-row">
+                        <span className="stat-value">{signal.value}</span>
+                        <span className="stat-context">{signal.context}</span>
+                      </div>
+                      <div className="bars" aria-hidden="true">
+                        {signal.trend.map((height, index) => (
+                          <span key={index} style={{ '--h': `${height}%` } as CSSProperties} />
+                        ))}
+                      </div>
+                      <p className="stat-note">{signal.note}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            </div>
           </div>
         </div>
 
@@ -122,36 +132,13 @@ export function App() {
         ) : null}
       </main>
 
-      <form
-        className="assistant-trigger"
-        aria-label="Ask AI Assistant"
-        onSubmit={event => {
-          event.preventDefault();
-          invokeAssistant();
-        }}
-      >
-        <label className="sr-only" htmlFor="assistant-prompt">
-          Ask AI Assistant anything
-        </label>
-        <input
-          ref={triggerRef}
-          id="assistant-prompt"
-          value={prompt}
-          autoComplete="off"
-          onChange={event => setPrompt(event.target.value)}
-        />
-        <button
-          className="icon-button optional-action"
-          type="button"
-          aria-label="Voice input"
-          disabled
-        >
-          <Icons.mic data-icon="inline-only" />
-        </button>
-        <button className="icon-button primary" type="submit" aria-label="Ask AI Assistant">
-          <Icons.arrowUp data-icon="inline-only" />
-        </button>
-      </form>
+      <PromptBar
+        ref={triggerRef}
+        value={prompt}
+        onValueChange={setPrompt}
+        onSubmit={() => invokeAssistant()}
+        anchor={columnAnchor}
+      />
     </div>
   );
 }
