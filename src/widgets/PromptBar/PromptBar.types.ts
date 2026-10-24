@@ -21,4 +21,6 @@ export interface IPromptBar extends IPromptBarStatus {
   hasThread: boolean;
   /** Centres the bar on the dashboard column on desktop; null on mobile, where CSS docks it. */
   anchor: IColumnAnchor | null;
+  /** The plus beside the bar: starts a new chat. */
+  onNewChat: () => void;
 }

@@ -258,6 +258,22 @@ svg { flex: none; }
 .icon-button.optional-action:disabled { color: var(--text-secondary); background: transparent; cursor: default; }
 .icon-button.primary { background: var(--primary); color: var(--primary-foreground); width: 2.5rem; height: 2.5rem; }
 .icon-button.primary:hover { background: oklch(0.36 0.21 272.5); color: var(--primary-foreground); }
+/* New chat: a pill beside the entry point with the bar's height, border and shadow, holding its
+   primary button the way the bar holds the send button. The desktop `left` is a fallback until the
+   bar has been measured; PromptBar then sets it inline. */
+.new-chat-trigger {
+  /* The bar's --shadow-lg, re-cut for a 3.25rem circle: its -12px spread leaves a 52px element only a
+     28px shadow to blur, so it dissolves and the pill reads flat beside the bar. Less negative spread
+     and a darker tint make the two look equally lifted. */
+  --shadow-pill: 0 20px 48px -8px oklch(0.17 0 0 / 0.3), 0 6px 16px -4px oklch(0.17 0 0 / 0.14);
+  position: fixed; z-index: var(--z-trigger); bottom: 1.5rem;
+  left: calc(50% + var(--sidebar-w) / 2 + min(var(--assistant-w), calc(100vw - var(--sidebar-w) - 3rem)) / 2 + 0.75rem);
+  display: grid; place-items: center; width: 3.25rem; height: 3.25rem;
+  border: 1px solid transparent; border-radius: var(--radius-full); background: var(--background);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--accent) 14%, transparent), var(--shadow-pill);
+  transition: box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out);
+}
+.new-chat-trigger:focus-within { box-shadow: 0 0 0 1px color-mix(in oklch, var(--ring) 58%, transparent), var(--shadow-pill); }
 
 /* Candidate placeholder */
 .assistant-placeholder {
@@ -299,10 +315,12 @@ svg { flex: none; }
   .stat-grid { display: flex; overflow-x: auto; gap: 0.75rem; margin: 0 -1rem; padding: 0 1rem 0.5rem; scroll-snap-type: x mandatory; scroll-padding-inline: 1rem; scrollbar-width: none; }
   .stat { flex: 0 0 72%; scroll-snap-align: start; }
   .assistant-trigger {
-    left: 0.75rem; right: 0.75rem; width: auto; transform: none;
+    /* Room on the right for the new-chat pill (3.25rem) and the gap to it. */
+    left: 0.75rem; right: 4.75rem; width: auto; transform: none;
     /* Clear the home indicator, with the same 20px gap above it as everywhere else. */
     bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
   }
+  .new-chat-trigger { left: auto; right: 0.75rem; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); }
   /* iOS Safari zooms the page into any focused input smaller than 16px, and leaves it zoomed. */
   .assistant-trigger input { font-size: 1rem; }
   .assistant-placeholder { left: 0.75rem; right: 0.75rem; width: auto; transform: none; bottom: 4.75rem; flex-direction: column; align-items: stretch; gap: 0.875rem; }

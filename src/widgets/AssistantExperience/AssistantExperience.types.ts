@@ -5,7 +5,10 @@ import type { IAnnouncement, IPinnedTurn, ITurn } from '@/types/assistant.types'
 import type { IColumnAnchor } from '@/types/layout.types';
 
 export interface IAssistantPanel {
+  /** The active chat's turns. Empty for a chat nothing has been asked in yet. */
   turns: ITurn[];
+  /** Offered as a first question while the chat is empty. */
+  suggestedQuestion: string;
   /** Whether to move focus into the dialog on open. */
   takeFocus: boolean;
   /** Scroll position to resume at, when the reader had scrolled before closing. */

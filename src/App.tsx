@@ -87,10 +87,11 @@ const App: ReactFC = () => {
     }
   };
 
-  // Focusing, clicking or typing in the bar with a thread behind a closed panel brings the panel
-  // back as a companion. Click and typing matter because after Escape the input is already focused.
+  // Focusing, clicking or typing in the bar brings the panel up as a companion: the thread behind a
+  // closed panel, or the empty "How can I help?" state before anything has been asked. Click and
+  // typing matter because after Escape the input is already focused.
   const reopenFromBar = () => {
-    if (!thread || assistant.isOpen || suppressFocusOpen.current) return;
+    if (assistant.isOpen || suppressFocusOpen.current) return;
     setPanelTakesFocus(false);
     assistant.open();
   };
@@ -108,6 +109,16 @@ const App: ReactFC = () => {
   const dismissAssistant = () => {
     assistant.close();
     focusPromptBar();
+  };
+
+  // The plus beside the bar: the panel opens on its empty state as a companion, and focus goes to
+  // the bar, ready for the first question. Focused here, inside the tap, not deferred: iOS only
+  // honours a programmatic focus (and raises the keyboard) while the user's gesture is running.
+  // The bar's focus handler would open the panel too, which newChat is already doing.
+  const startNewChat = () => {
+    setPanelTakesFocus(false);
+    assistant.newChat();
+    promptRef.current?.focus();
   };
 
   // Every unpin offers its own undo for UNDO_WINDOW_MS; each toast restores only its own card.
@@ -241,6 +252,7 @@ const App: ReactFC = () => {
           <AssistantExperience
             isOpen={assistant.isOpen}
             turns={assistant.turns}
+            suggestedQuestion={suggestedNextStep}
             takeFocus={panelTakesFocus}
             initialScrollTop={panelScroll.resumeTop}
             onScrollChange={panelScroll.remember}
@@ -266,6 +278,7 @@ const App: ReactFC = () => {
         isPanelOpen={assistant.isOpen}
         hasUnseenAnswer={assistant.hasUnseenAnswer}
         onReopen={openWithFocus}
+        onNewChat={startNewChat}
       />
 
       {/* Toasts sit above the prompt bar's line, never over it: the bar is 1.5rem from the bottom and
