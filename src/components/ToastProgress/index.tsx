@@ -14,7 +14,7 @@ const ToastProgress: ReactFC<IToastProgress> = ({ durationMs, onComplete }) => (
     aria-hidden="true"
   >
     <span
-      className="block h-full origin-left bg-primary/70"
+      className="block h-full origin-left bg-info-muted-foreground"
       style={{ animation: `toast-progress ${durationMs}ms linear forwards` }}
       onAnimationEnd={onComplete}
     />
