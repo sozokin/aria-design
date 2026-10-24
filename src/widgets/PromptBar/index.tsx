@@ -8,9 +8,17 @@ import useTextLines from '@/hooks/useTextLines';
 
 import { IPromptBar } from './PromptBar.types';
 
-// The new-chat pill and the gap to it: 3.25rem + 0.75rem (styles.css, .new-chat-trigger). On
-// desktop the bar gives up this much width, so the bar and the pill stay centred as a pair.
+// The new-chat pill and the gap to it: 3.25rem + 0.75rem (styles.css, .new-chat-trigger). While
+// the pill is out, the desktop bar gives up this much width, so the bar and the pill stay centred
+// as a pair.
 const NEW_CHAT_FOOTPRINT_PX = 64;
+// How long the bar and the pill take to glide into their places (styles.css, --duration-slow).
+const GLIDE_MS = 320;
+// On mobile the pill's retreat waits for the keyboard: once the visual viewport has stopped
+// changing for this long it has arrived, and if it never changes (a hardware keyboard, say) the
+// retreat goes ahead after the fallback.
+const KEYBOARD_SETTLE_MS = 120;
+const KEYBOARD_FALLBACK_MS = 700;
 
 // The field shows up to this many lines, growing a line at a time; longer questions scroll inside.
 const MAX_LINES = 3;
@@ -38,7 +46,9 @@ export const promptBarHeight = (lines: number) =>
  * line being typed at the bottom while the lines above fade out at the top. The send button does
  * what its arrow shows: with text it asks (arrow at the text), with an empty bar it opens the panel
  * (up) or closes it (down). On desktop Enter does the same and Shift+Enter starts a line; on mobile
- * Enter only starts a line.
+ * Enter only starts a line. The new-chat pill waits behind the bar's right end until the chat has a
+ * question in it, then the bar makes room and the pill glides out beside it: a first question is a
+ * new chat already, so the pill matters only once there is a chat to leave.
  */
 const PromptBar: ReactFC<IPromptBar> = ({
   ref,
@@ -55,14 +65,61 @@ const PromptBar: ReactFC<IPromptBar> = ({
   onNewChat,
   onLinesChange,
 }) => {
-  // On desktop, centre the pair on the dashboard column rather than the whole main area. The bar
-  // is positioned by its centre (CSS translates it back by half), the pill by its left edge.
-  const barCenter = anchor ? anchor.left + (anchor.width - NEW_CHAT_FOOTPRINT_PX) / 2 : null;
-  const barWidth = anchor
-    ? `min(var(--assistant-w), ${anchor.width - NEW_CHAT_FOOTPRINT_PX}px)`
-    : null;
-
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
+  // The pill is out while the active chat has a question; otherwise it is behind the bar. Its state
+  // lags `hasThread` on mobile when a new chat starts: the bar takes focus and the keyboard rises,
+  // and the pill's retreat (with the bar widening into its room) waits until the keyboard has
+  // arrived, so the two moves do not happen on top of each other.
+  const [showsNewChat, setShowsNewChat] = useState(hasThread);
+  // Positions also follow the column (resizes, the sidebar gliding), which must not be eased, so
+  // the transitions are switched on only for the pill's own coming and going: set in the same
+  // update as the new positions (anything measuring layout in between would otherwise see the
+  // move with transitions still off), and switched off once the glide is over.
+  const [isGliding, setIsGliding] = useState(false);
+  useEffect(() => {
+    if (!isGliding) return;
+    const timer = window.setTimeout(() => setIsGliding(false), GLIDE_MS);
+    return () => window.clearTimeout(timer);
+  }, [isGliding]);
+  useEffect(() => {
+    if (hasThread === showsNewChat) return;
+    const move = () => {
+      setShowsNewChat(hasThread);
+      setIsGliding(true);
+    };
+    if (hasThread || isDesktop) {
+      move();
+      return;
+    }
+    const viewport = window.visualViewport;
+    const retreat = move;
+    let settle = 0;
+    const fallback = window.setTimeout(retreat, KEYBOARD_FALLBACK_MS);
+    const handleViewportResize = () => {
+      window.clearTimeout(settle);
+      settle = window.setTimeout(() => {
+        window.clearTimeout(fallback);
+        retreat();
+      }, KEYBOARD_SETTLE_MS);
+    };
+    viewport?.addEventListener('resize', handleViewportResize);
+    return () => {
+      window.clearTimeout(fallback);
+      window.clearTimeout(settle);
+      viewport?.removeEventListener('resize', handleViewportResize);
+    };
+  }, [hasThread, isDesktop, showsNewChat]);
+  const footprint = showsNewChat ? NEW_CHAT_FOOTPRINT_PX : 0;
+  // On desktop, centre the bar (and, when out, the pill with it) on the dashboard column rather
+  // than the whole main area. The bar is positioned by its centre (CSS translates it back by
+  // half), the pill by its left edge: beside the bar when out, under its right end when hidden.
+  const barCenter = anchor ? anchor.left + (anchor.width - footprint) / 2 : null;
+  const barWidth = anchor ? `min(var(--assistant-w), ${anchor.width - footprint}px)` : null;
+  const pillLeft =
+    barCenter !== null
+      ? `calc(${barCenter}px + ${barWidth} / 2 ${showsNewChat ? '+ 0.75rem' : '- 3.25rem'})`
+      : undefined;
+
   const intent = value.trim() ? 'ask' : isPanelOpen ? 'close' : 'open';
   const [mirror, setMirror] = useState<HTMLDivElement | null>(null);
   const lines = useTextLines(mirror, value);
@@ -104,6 +161,8 @@ const PromptBar: ReactFC<IPromptBar> = ({
       <form
         className="assistant-trigger"
         aria-label="Ask AI Assistant"
+        data-with-plus={showsNewChat}
+        data-gliding={isGliding}
         style={barCenter !== null ? { left: barCenter, width: barWidth ?? undefined } : undefined}
         onSubmit={event => {
           event.preventDefault();
@@ -179,14 +238,14 @@ const PromptBar: ReactFC<IPromptBar> = ({
         </button>
       </form>
 
-      {/* The same pill as the bar, so the plus reads as the send button's twin rather than a loose dot. */}
+      {/* The same pill as the bar, so the plus reads as the send button's twin rather than a loose
+          dot. Inert while hidden behind the bar, so it is neither focusable nor announced. */}
       <div
         className="new-chat-trigger"
-        style={
-          barCenter !== null
-            ? { left: `calc(${barCenter}px + ${barWidth} / 2 + 0.75rem)` }
-            : undefined
-        }
+        data-shown={showsNewChat}
+        data-gliding={isGliding}
+        inert={!showsNewChat}
+        style={pillLeft ? { left: pillLeft } : undefined}
       >
         <button
           className="icon-button primary"
