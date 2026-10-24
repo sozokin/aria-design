@@ -1,0 +1,84 @@
+import { useEffect, useId, useRef, type FC as ReactFC } from 'react';
+import { Sparkles, X } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import AnswerTurn from './AnswerTurn';
+
+import useColumnAnchor from '@/hooks/useColumnAnchor';
+
+import { IAssistantPanel } from './AssistantExperience.types';
+
+/**
+ * The answer surface. Non-modal on purpose: the prompt bar underneath stays usable for follow-ups,
+ * so there is no focus trap. Escape closes; the host returns focus to the entry point.
+ *
+ * On desktop the panel is anchored by its top edge, placed where the top would sit at full height,
+ * so arriving content only ever extends it downward and what has already loaded never moves. On
+ * mobile the sheet is a fixed box.
+ */
+const AssistantPanel: ReactFC<IAssistantPanel> = ({ turns, columnRef, onDismiss }) => {
+  const titleId = useId();
+  const rootRef = useRef<HTMLElement>(null);
+
+  const anchor = useColumnAnchor(columnRef);
+  const thread = turns[0];
+
+  // Take focus so screen readers announce the dialog; Tab then reaches its controls.
+  useEffect(() => {
+    rootRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onDismiss();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onDismiss]);
+
+  return (
+    <section
+      ref={rootRef}
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby={titleId}
+      tabIndex={-1}
+      style={anchor ? { left: anchor.left, width: anchor.width } : undefined}
+      className="fixed inset-x-3 top-8 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-(--z-assistant) flex flex-col rounded-2xl border border-border bg-popover text-popover-foreground shadow-md outline-none shell:inset-x-auto shell:top-[calc(100dvh-5.75rem-var(--assistant-panel-max))] shell:bottom-auto shell:max-h-(--assistant-panel-max) shell:shadow-lg"
+    >
+      <header className="flex items-start gap-3 border-b border-border px-5 pt-4 pb-3">
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1 text-[0.6875rem] font-semibold tracking-[0.08em] text-accent-muted-foreground uppercase">
+            <Sparkles className="size-3" aria-hidden="true" />
+            AI Assistant
+          </p>
+          <h2 id={titleId} className="mt-0.5 truncate text-[0.9375rem] font-semibold">
+            {thread.prompt}
+          </h2>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onDismiss}
+          aria-label="Close AI Assistant"
+        >
+          <X aria-hidden="true" />
+        </Button>
+      </header>
+
+      <div className="min-h-0 shrink overflow-y-auto overscroll-contain">
+        <div className="flex flex-col gap-5 px-5 py-4">
+          {turns.map(turn => (
+            <AnswerTurn key={turn.id} turn={turn} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default AssistantPanel;

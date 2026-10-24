@@ -6,7 +6,7 @@
  */
 import { useRef, useState, type FC as ReactFC } from 'react';
 
-import { AssistantExperience } from './AssistantExperience';
+import AssistantExperience from '@/widgets/AssistantExperience';
 import Brief from '@/widgets/Brief';
 import PromptBar from '@/widgets/PromptBar';
 import Sidebar from '@/widgets/Sidebar';
@@ -34,8 +34,6 @@ const App: ReactFC = () => {
 
   const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
-
-  const latestTurn = assistant.turns[assistant.turns.length - 1];
 
   const submitPrompt = () => {
     const question = prompt.trim() || DEFAULT_PROMPT;
@@ -89,13 +87,12 @@ const App: ReactFC = () => {
           </div>
         </div>
 
-        {assistant.isOpen && latestTurn && (
-          <AssistantExperience
-            prompt={latestTurn.prompt}
-            onDismiss={dismissAssistant}
-            triggerRef={promptRef}
-          />
-        )}
+        <AssistantExperience
+          isOpen={assistant.isOpen}
+          turns={assistant.turns}
+          columnRef={columnRef}
+          onDismiss={dismissAssistant}
+        />
       </main>
 
       <PromptBar
