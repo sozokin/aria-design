@@ -1,7 +1,10 @@
 import { useEffect, useRef, type FC as ReactFC } from 'react';
+import { motion } from 'motion/react';
 import { Pin } from 'lucide-react';
 
 import CoachingCard from './CoachingCard';
+
+import { EASE_OUT } from '@/lib/motion';
 
 import { IPinnedAnswer } from './AssistantExperience.types';
 
@@ -19,26 +22,37 @@ const PinnedAnswer: ReactFC<IPinnedAnswer> = ({ pinned, onUnpin, onAskNextStep }
   }, []);
 
   return (
-    <section
+    <motion.section
       ref={ref}
       id={pinnedAnswerId(pinned.turnId)}
       tabIndex={-1}
       aria-label={`Pinned AI Assistant answer: ${pinned.card.rep}, ${pinned.card.period}`}
       className="mt-7 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      // When content above it leaves (another card unpinned), glide rather than jump.
+      layout="position"
+      transition={{ layout: { duration: 0.45, ease: EASE_OUT } }}
+      exit={{ opacity: 0, transition: { duration: 0.18 } }}
     >
-      <p className="mb-2 flex items-center gap-1.5 text-xs text-text-secondary">
+      {/* The label appears once the card has landed, so it never flies in with it. */}
+      <motion.p
+        className="mb-2 flex items-center gap-1.5 text-xs text-text-secondary"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.25 }}
+      >
         <Pin className="size-3 shrink-0" aria-hidden="true" />
         <span className="min-w-0">
           Pinned from AI Assistant · <q>{pinned.prompt}</q>
         </span>
-      </p>
+      </motion.p>
       <CoachingCard
         card={pinned.card}
+        layoutId={`coaching-card-${pinned.turnId}`}
         isPinned
         onTogglePin={onUnpin}
         onAskNextStep={onAskNextStep}
       />
-    </section>
+    </motion.section>
   );
 };
 

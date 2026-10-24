@@ -42,6 +42,8 @@ const AnswerTurn: ReactFC<IAnswerTurn> = ({
         {turn.card && (
           <CoachingCard
             card={turn.card}
+            // The pinned copy owns the shared layout id while this turn is pinned.
+            layoutId={isPinned ? undefined : `coaching-card-${turn.id}`}
             isPinned={isPinned}
             onTogglePin={onTogglePin}
             onAskNextStep={onAskNextStep}

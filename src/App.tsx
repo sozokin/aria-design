@@ -5,6 +5,7 @@
  * the widgets share, and each widget owns its own markup.
  */
 import { useRef, useState, type FC as ReactFC } from 'react';
+import { AnimatePresence, LayoutGroup } from 'motion/react';
 import { toast } from 'sonner';
 
 import ToastProgress from '@/components/ToastProgress';
@@ -136,75 +137,81 @@ const App: ReactFC = () => {
       />
 
       <main ref={mainRef} className="main" id="top">
-        <div ref={mainInnerRef} className="main-inner">
-          <div className="grid gap-x-10 gap-y-8 shell:grid-cols-[minmax(0,1fr)_17rem]">
-            <div ref={columnRef} className="min-w-0">
-              <div className="greeting-row">
-                <h1 className="greeting">Good to see you, Jordan.</h1>
-                <p className="date-eyebrow shell:hidden">{TODAY}</p>
-              </div>
+        {/* One layout context for the dashboard and the panel, so a pinned card's shared layoutId
+            can fly from the panel into the dashboard. */}
+        <LayoutGroup>
+          <div ref={mainInnerRef} className="main-inner">
+            <div className="grid gap-x-10 gap-y-8 shell:grid-cols-[minmax(0,1fr)_17rem]">
+              <div ref={columnRef} className="min-w-0">
+                <div className="greeting-row">
+                  <h1 className="greeting">Good to see you, Jordan.</h1>
+                  <p className="date-eyebrow shell:hidden">{TODAY}</p>
+                </div>
 
-              <div className="content">
-                <Brief
-                  suggestedNextStep={suggestedNextStep}
-                  onAskNextStep={question => {
-                    // If the bar still holds this same question, clear it so the follow-up placeholder shows.
-                    if (prompt.trim() === question) setPrompt('');
-                    askWithFocus(question);
-                  }}
-                />
-
-                {/* On mobile the team overview sits under the brief; on desktop it is the right rail. */}
-                {!isDesktop && (
-                  <div className="section flex flex-col gap-6">
-                    <TeamOverview
-                      pinned={assistant.pinned}
-                      onJumpToPinned={jumpToPinned}
-                      variant="inline"
-                    />
-                  </div>
-                )}
-
-                {/* Pinned answers stack newest first; each is unpinned and undone on its own. */}
-                {assistant.pinned.map(pin => (
-                  <PinnedAnswer
-                    key={pin.turnId}
-                    pinned={pin}
-                    onUnpin={() => {
-                      unpinWithUndo(pin.turnId);
-                      focusPromptBar();
+                <div className="content">
+                  <Brief
+                    suggestedNextStep={suggestedNextStep}
+                    onAskNextStep={question => {
+                      // If the bar still holds this same question, clear it so the follow-up placeholder shows.
+                      if (prompt.trim() === question) setPrompt('');
+                      askWithFocus(question);
                     }}
-                    onAskNextStep={askWithFocus}
                   />
-                ))}
+
+                  {/* On mobile the team overview sits under the brief; on desktop it is the right rail. */}
+                  {!isDesktop && (
+                    <div className="section flex flex-col gap-6">
+                      <TeamOverview
+                        pinned={assistant.pinned}
+                        onJumpToPinned={jumpToPinned}
+                        variant="inline"
+                      />
+                    </div>
+                  )}
+
+                  {/* Pinned answers stack newest first; each is unpinned and undone on its own. */}
+                  <AnimatePresence>
+                    {assistant.pinned.map(pin => (
+                      <PinnedAnswer
+                        key={pin.turnId}
+                        pinned={pin}
+                        onUnpin={() => {
+                          unpinWithUndo(pin.turnId);
+                          focusPromptBar();
+                        }}
+                        onAskNextStep={askWithFocus}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </div>
               </div>
+
+              {isDesktop && (
+                <aside
+                  className="flex flex-col gap-6 pt-1"
+                  aria-label="Team overview and pinned answers"
+                >
+                  <p className="date-eyebrow text-right">{TODAY}</p>
+                  <TeamOverview pinned={assistant.pinned} onJumpToPinned={jumpToPinned} />
+                </aside>
+              )}
             </div>
-
-            {isDesktop && (
-              <aside
-                className="flex flex-col gap-6 pt-1"
-                aria-label="Team overview and pinned answers"
-              >
-                <p className="date-eyebrow text-right">{TODAY}</p>
-                <TeamOverview pinned={assistant.pinned} onJumpToPinned={jumpToPinned} />
-              </aside>
-            )}
           </div>
-        </div>
 
-        <AssistantExperience
-          isOpen={assistant.isOpen}
-          turns={assistant.turns}
-          takeFocus={panelTakesFocus}
-          initialScrollTop={panelScroll.resumeTop}
-          onScrollChange={panelScroll.remember}
-          anchor={columnAnchor}
-          onDismiss={dismissAssistant}
-          pinned={assistant.pinned}
-          onAsk={askWithFocus}
-          onPin={assistant.pin}
-          onUnpin={unpinWithUndo}
-        />
+          <AssistantExperience
+            isOpen={assistant.isOpen}
+            turns={assistant.turns}
+            takeFocus={panelTakesFocus}
+            initialScrollTop={panelScroll.resumeTop}
+            onScrollChange={panelScroll.remember}
+            anchor={columnAnchor}
+            onDismiss={dismissAssistant}
+            pinned={assistant.pinned}
+            onAsk={askWithFocus}
+            onPin={assistant.pin}
+            onUnpin={unpinWithUndo}
+          />
+        </LayoutGroup>
       </main>
 
       <PromptBar
