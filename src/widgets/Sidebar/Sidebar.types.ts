@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, Ref } from 'react';
 
 export interface INavEntry {
   label: string;
@@ -11,4 +11,15 @@ export interface ISidebar {
   isCompact: boolean;
   onCompactChange: (compact: boolean) => void;
   isDesktop: boolean;
+}
+
+export interface IUserMenuButton {
+  ref: Ref<HTMLButtonElement>;
+  isOpen: boolean;
+  onToggle: () => void;
+}
+
+export interface IMobileNav {
+  open: boolean;
+  onClose: () => void;
 }
