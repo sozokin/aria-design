@@ -9,7 +9,7 @@ import { IPinnedAnswer } from './AssistantExperience.types';
 export const pinnedAnswerId = (turnId: string) => `pinned-answer-${turnId}`;
 
 /** A coaching card once it has settled into the dashboard. Several can stack, newest first. */
-const PinnedAnswer: ReactFC<IPinnedAnswer> = ({ pinned, onUnpin }) => {
+const PinnedAnswer: ReactFC<IPinnedAnswer> = ({ pinned, onUnpin, onAskNextStep }) => {
   const ref = useRef<HTMLElement>(null);
 
   // Pinning moves the card out from under the pointer, so focus follows it.
@@ -32,7 +32,12 @@ const PinnedAnswer: ReactFC<IPinnedAnswer> = ({ pinned, onUnpin }) => {
           Pinned from AI Assistant · <q>{pinned.prompt}</q>
         </span>
       </p>
-      <CoachingCard card={pinned.card} isPinned onTogglePin={onUnpin} />
+      <CoachingCard
+        card={pinned.card}
+        isPinned
+        onTogglePin={onUnpin}
+        onAskNextStep={onAskNextStep}
+      />
     </section>
   );
 };

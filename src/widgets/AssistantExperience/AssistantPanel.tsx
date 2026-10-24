@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, type FC as ReactFC } from 'react';
+import { useReducedMotion } from 'motion/react';
 import { Sparkles, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -22,13 +23,17 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
   anchor,
   onDismiss,
   pinned,
+  onAsk,
   onPin,
   onUnpin,
 }) => {
   const titleId = useId();
   const rootRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Set on mount when a scroll position was resumed, so the "new turn" scroll below skips once.
+  const resumedScroll = useRef(false);
 
+  const reduceMotion = useReducedMotion();
   const thread = turns[0];
 
   // Take focus so screen readers announce the dialog; Tab then reaches its controls. Not when the
@@ -52,9 +57,25 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
   // Reopening resumes where the reader left off, if they had scrolled. Before paint, so the panel
   // never flashes at the top first.
   useLayoutEffect(() => {
-    if (initialScrollTop && scrollRef.current) scrollRef.current.scrollTop = initialScrollTop;
+    if (initialScrollTop && scrollRef.current) {
+      scrollRef.current.scrollTop = initialScrollTop;
+      resumedScroll.current = true;
+    }
     // Mount only: later prop changes must not refocus or rescroll an open panel.
   }, []);
+
+  // A new follow-up scrolls into view at the top of the panel, like a fresh page.
+  useEffect(() => {
+    const resumed = resumedScroll.current;
+    resumedScroll.current = false;
+    if (turns.length < 2 || resumed) return;
+
+    const scroller = scrollRef.current;
+    const latest = scroller?.querySelector<HTMLElement>('[data-turn]:last-child');
+    if (!scroller || !latest) return;
+
+    scroller.scrollTo({ top: latest.offsetTop - 16, behavior: reduceMotion ? 'auto' : 'smooth' });
+  }, [turns.length, reduceMotion]);
 
   return (
     <section
@@ -90,17 +111,21 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
       <div
         ref={scrollRef}
         onScroll={event => onScrollChange(event.currentTarget.scrollTop)}
-        className="min-h-0 shrink overflow-y-auto overscroll-contain"
+        // Relative so it is the turns' offsetParent: their offsetTop is then measured from the
+        // scroll area, not from the dialog with its header.
+        className="relative min-h-0 shrink overflow-y-auto overscroll-contain"
       >
         <div className="flex flex-col gap-5 px-5 py-4">
-          {turns.map(turn => {
+          {turns.map((turn, index) => {
             const isPinned = pinned.some(entry => entry.turnId === turn.id);
             return (
               <AnswerTurn
                 key={turn.id}
                 turn={turn}
+                isFollowUp={index > 0}
                 isPinned={isPinned}
                 onTogglePin={() => (isPinned ? onUnpin(turn.id) : onPin(turn))}
+                onAskNextStep={onAsk}
               />
             );
           })}
