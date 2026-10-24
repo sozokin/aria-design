@@ -15,7 +15,10 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals", "vite/client"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src", "mock", "vite.config.ts"]
 }
