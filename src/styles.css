@@ -317,6 +317,16 @@ svg { flex: none; }
 .icon-button.optional-action:disabled { color: var(--text-secondary); background: transparent; cursor: default; }
 .icon-button.primary { background: var(--primary); color: var(--primary-foreground); width: 2.5rem; height: 2.5rem; }
 .icon-button.primary:hover { background: oklch(0.36 0.21 272.5); color: var(--primary-foreground); }
+/* A press reads as a press: the button sinks while held, then springs back past its size and
+   settles. The release is the slower, bouncy half; the press itself is quick and plain. */
+.icon-button.primary {
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-slow) var(--ease-spring);
+}
+.icon-button.primary:active { transform: scale(0.9); transition-duration: var(--duration-fast), var(--duration-fast), 80ms; transition-timing-function: var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+  /* Still sinks, so the press is confirmed, but returns without the bounce. */
+  .icon-button.primary { transition-timing-function: var(--ease-out); }
+}
 /* New chat: a pill beside the entry point with the bar's one-line height, border and shadow,
    holding its primary button the way the bar holds the send button, and centred on the bar as
    the bar grows. The desktop `left` is a fallback until the bar has been measured; PromptBar then
