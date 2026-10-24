@@ -2,9 +2,15 @@ import { type FC as ReactFC } from 'react';
 
 import EntityPreview from '@/components/EntityPreview';
 import Icons from '@/components/Icons';
+import NextStepChip from '@/widgets/AssistantExperience/NextStepChip';
 
-/** Jordan's morning brief, as the shell provides it. */
-const Brief: ReactFC = () => (
+import { IBrief } from './Brief.types';
+
+/**
+ * Jordan's morning brief, as the shell provides it, plus a "Suggested next step" chip that
+ * mirrors the latest coaching card's next step and asks it when clicked.
+ */
+const Brief: ReactFC<IBrief> = ({ suggestedNextStep, onAskNextStep }) => (
   <section className="brief" aria-labelledby="brief-title">
     <h2 id="brief-title" className="sr-only">
       Today's brief
@@ -86,6 +92,11 @@ const Brief: ReactFC = () => (
         enters security review today; Percepto has a pricing follow-up Friday.
       </li>
     </ul>
+
+    <div className="mt-1">
+      <p className="text-xs font-semibold text-accent-muted-foreground">Suggested next step</p>
+      <NextStepChip text={suggestedNextStep} onAsk={onAskNextStep} />
+    </div>
   </section>
 );
 
