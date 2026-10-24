@@ -73,8 +73,9 @@ const App: ReactFC = () => {
 
   // The send button does what its arrow shows (and Enter on desktop with it): with text in the bar
   // it asks the question and clears the bar; with an empty bar it opens the panel if it is closed
-  // and closes it if it is open. Opening this way is like the plus: the panel is a companion and
-  // focus goes to the bar, ready for the question.
+  // and closes it if it is open. Opening this way is like the plus: the panel is a companion, and
+  // on desktop focus goes to the bar, ready for the question. On mobile nothing takes focus, so the
+  // keyboard stays down and the panel has the whole screen to itself; closing drops focus there too.
   const submitPrompt = () => {
     const text = prompt.trim();
     if (text) {
@@ -86,7 +87,7 @@ const App: ReactFC = () => {
     } else {
       setPanelTakesFocus(false);
       assistant.open();
-      promptRef.current?.focus();
+      if (isDesktop) promptRef.current?.focus();
     }
   };
 
