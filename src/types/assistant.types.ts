@@ -36,6 +36,8 @@ export interface IPinnedTurn {
   turnId: string;
   prompt: string;
   card: CoachingCard;
+  /** Put back by an undo: it reopens where it was rather than arriving from the panel. */
+  restored?: boolean;
 }
 
 /** A message for the live region. The id forces a DOM change even when the text repeats. */

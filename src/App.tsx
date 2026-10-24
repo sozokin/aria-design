@@ -247,10 +247,10 @@ const App: ReactFC = () => {
                         key={pin.turnId}
                         pinned={pin}
                         shareCardLayout={isDesktop}
-                        onUnpin={() => {
-                          unpinWithUndo(pin.turnId);
-                          focusPromptBar();
-                        }}
+                        // Focus is left to drop with the Unpin button rather than sent to the bar:
+                        // the toast would hand it back to the bar on Undo, and the bar opens the
+                        // panel when it is focused. The undone card takes focus itself.
+                        onUnpin={() => unpinWithUndo(pin.turnId)}
                         onAskNextStep={askWithFocus}
                       />
                     ))}
@@ -314,7 +314,9 @@ const App: ReactFC = () => {
             onPin={turn =>
               isDesktop ? assistant.pin(turn) : assistant.closeThen(() => assistant.pin(turn))
             }
-            onUnpin={unpinWithUndo}
+            // An unpin asked from the chat waits for the panel to leave, so the card is seen going.
+            // Focus drops with the panel, for the same reason as on the dashboard.
+            onUnpin={turnId => assistant.closeThen(() => unpinWithUndo(turnId))}
           />
         </LayoutGroup>
       </main>
