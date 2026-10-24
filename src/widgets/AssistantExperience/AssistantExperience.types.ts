@@ -1,8 +1,17 @@
 import type { ReactNode } from 'react';
 
 import type { CoachingCard, CoachingRow } from '../../../mock/types';
-import type { IAnnouncement, IPinnedTurn, ITurn } from '@/types/assistant.types';
+import type { IAnnouncement, IChatSummary, IPinnedTurn, ITurn } from '@/types/assistant.types';
 import type { IColumnAnchor } from '@/types/layout.types';
+
+export interface IChatHistory {
+  /** Every chat with turns, most recently asked first. */
+  chats: IChatSummary[];
+  activeChatId: string;
+  onSwitchChat: (chatId: string) => void;
+  /** Icon and "Chat history" rather than the icon alone. */
+  withLabel?: boolean;
+}
 
 export interface IAssistantPanel {
   /** The active chat's turns. Empty for a chat nothing has been asked in yet. */

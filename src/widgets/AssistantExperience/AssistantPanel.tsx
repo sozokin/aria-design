@@ -33,6 +33,7 @@ const MOBILE_ENTRANCE = {
  * The answer surface. Non-modal on purpose: the prompt bar underneath stays usable for follow-ups,
  * so there is no focus trap. Escape closes; the host returns focus to the entry point. Before
  * anything is asked in a chat the panel asks how it can help and offers a first question.
+ * Switching chats from the history sheet swaps the turns in place.
  *
  * Before anything is asked the panel is docked: it sits on the prompt bar at its natural height, so
  * "How can I help?" reads as part of the bar. Asking a question raises it. On desktop the raised
@@ -82,7 +83,9 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      // Already handled means a sheet took it (radix listens in the capture phase): that sheet
+      // closes and the panel stays.
+      if (event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault();
         onDismiss();
       }
