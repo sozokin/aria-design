@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import ToastProgress from '@/components/ToastProgress';
 import { Toaster } from '@/components/ui/sonner';
 import AssistantExperience from '@/widgets/AssistantExperience';
+import LiveAnnouncer from '@/widgets/AssistantExperience/LiveAnnouncer';
 import PinnedAnswer, { pinnedAnswerId } from '@/widgets/AssistantExperience/PinnedAnswer';
 import Brief from '@/widgets/Brief';
 import PromptBar from '@/widgets/PromptBar';
@@ -118,6 +119,10 @@ const App: ReactFC = () => {
       description: (
         <>
           {entry && `${entry.card.rep} · ${entry.card.period}`}
+          {/* The toast is the announcement for an unpin, so it carries the time limit too. */}
+          <span className="sr-only">
+            {` Undo is available for ${UNDO_WINDOW_MS / 1000} seconds.`}
+          </span>
           <ToastProgress durationMs={UNDO_WINDOW_MS} onComplete={() => toast.dismiss(toastId)} />
         </>
       ),
@@ -264,6 +269,7 @@ const App: ReactFC = () => {
       {/* Toasts sit above the prompt bar's line, never over it: the bar is 1.5rem from the bottom and
           3.25rem tall, so 5.5rem leaves a 0.75rem gap. It also covers 601–760px, where sonner still
           uses this offset but our bar is already docked full width. */}
+      <LiveAnnouncer announcement={assistant.announcement} />
       <Toaster
         position="bottom-right"
         offset={{ bottom: '5.5rem', right: '1.5rem' }}
