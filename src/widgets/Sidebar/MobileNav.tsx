@@ -1,5 +1,5 @@
 import { useEffect, useRef, type FC as ReactFC } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { X } from 'lucide-react';
 
 import Icons from '@/components/Icons';
@@ -18,6 +18,8 @@ export const MOBILE_NAV_ID = 'mobile-nav';
  */
 const MobileNav: ReactFC<IMobileNav> = ({ open, onClose }) => {
   const navRef = useRef<HTMLElement>(null);
+  // Reduced motion only switches off transforms; the height snaps here instead of sliding.
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!open) return;
@@ -46,8 +48,8 @@ const MobileNav: ReactFC<IMobileNav> = ({ open, onClose }) => {
           className="absolute inset-x-0 top-full overflow-hidden border-b border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lg outline-none"
           initial={{ height: 0 }}
           animate={{ height: 'auto' }}
-          exit={{ height: 0, transition: { duration: 0.26, ease: EASE_OUT } }}
-          transition={{ duration: 0.38, ease: EASE_OUT }}
+          exit={{ height: 0, transition: { duration: reduceMotion ? 0 : 0.26, ease: EASE_OUT } }}
+          transition={{ duration: reduceMotion ? 0 : 0.38, ease: EASE_OUT }}
         >
           <motion.div
             className="flex flex-col gap-0.5 px-3 pt-2 pb-3"
