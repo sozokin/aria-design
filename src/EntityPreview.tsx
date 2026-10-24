@@ -1,12 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 type EntityPreviewProps = {
   id: string;
@@ -39,7 +32,7 @@ export function EntityPreview({ id, label, children }: EntityPreviewProps) {
 
   const openPreview = useCallback(() => {
     cancelClose();
-    setPosition((current) => ({ ...current, ready: false }));
+    setPosition(current => ({ ...current, ready: false }));
     setIsOpen(true);
   }, [cancelClose]);
 
@@ -61,9 +54,13 @@ export function EntityPreview({ id, label, children }: EntityPreviewProps) {
 
     const triggerRect = trigger.getBoundingClientRect();
     const previewRect = preview.getBoundingClientRect();
-    const maxLeft = Math.max(VIEWPORT_GUTTER, window.innerWidth - previewRect.width - VIEWPORT_GUTTER);
+    const maxLeft = Math.max(
+      VIEWPORT_GUTTER,
+      window.innerWidth - previewRect.width - VIEWPORT_GUTTER,
+    );
     const left = Math.min(Math.max(VIEWPORT_GUTTER, triggerRect.left), maxLeft);
-    const fitsBelow = triggerRect.bottom + PREVIEW_GAP + previewRect.height <= window.innerHeight - VIEWPORT_GUTTER;
+    const fitsBelow =
+      triggerRect.bottom + PREVIEW_GAP + previewRect.height <= window.innerHeight - VIEWPORT_GUTTER;
     const top = fitsBelow
       ? triggerRect.bottom + PREVIEW_GAP
       : Math.max(VIEWPORT_GUTTER, triggerRect.top - previewRect.height - PREVIEW_GAP);
@@ -75,12 +72,12 @@ export function EntityPreview({ id, label, children }: EntityPreviewProps) {
     if (!isOpen) return;
 
     updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
 
     return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
     };
   }, [isOpen, updatePosition]);
 
@@ -94,8 +91,8 @@ export function EntityPreview({ id, label, children }: EntityPreviewProps) {
       }
     };
 
-    document.addEventListener("pointerdown", handleOutsidePointer);
-    return () => document.removeEventListener("pointerdown", handleOutsidePointer);
+    document.addEventListener('pointerdown', handleOutsidePointer);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointer);
   }, [closePreview, isOpen]);
 
   useEffect(() => () => cancelClose(), [cancelClose]);
@@ -108,11 +105,11 @@ export function EntityPreview({ id, label, children }: EntityPreviewProps) {
         type="button"
         aria-expanded={isOpen}
         aria-controls={id}
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => setIsOpen(open => !open)}
         onFocus={openPreview}
         onBlur={scheduleClose}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
+        onKeyDown={event => {
+          if (event.key === 'Escape') {
             event.preventDefault();
             closePreview();
           }

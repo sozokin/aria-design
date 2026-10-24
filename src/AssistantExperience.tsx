@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import type { RefObject } from 'react';
 
 type AssistantExperienceProps = {
   /** The question Jordan just asked. */
