@@ -8,7 +8,7 @@ import StreamedText from './StreamedText';
 import { IAnswerTurn } from './AssistantExperience.types';
 
 /** One question and its answer: status, text and card, each shown in place of a skeleton. */
-const AnswerTurn: ReactFC<IAnswerTurn> = ({ turn }) => {
+const AnswerTurn: ReactFC<IAnswerTurn> = ({ turn, isPinned, onTogglePin }) => {
   const isStreaming = turn.phase === 'streaming';
 
   return (
@@ -24,7 +24,11 @@ const AnswerTurn: ReactFC<IAnswerTurn> = ({ turn }) => {
         <AnswerSkeleton.Text />
       )}
 
-      {turn.card ? <CoachingCard card={turn.card} /> : <AnswerSkeleton.Card />}
+      {turn.card ? (
+        <CoachingCard card={turn.card} isPinned={isPinned} onTogglePin={onTogglePin} />
+      ) : (
+        <AnswerSkeleton.Card />
+      )}
     </div>
   );
 };

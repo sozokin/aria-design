@@ -16,7 +16,14 @@ import { IAssistantPanel } from './AssistantExperience.types';
  * so arriving content only ever extends it downward and what has already loaded never moves. On
  * mobile the sheet is a fixed box.
  */
-const AssistantPanel: ReactFC<IAssistantPanel> = ({ turns, columnRef, onDismiss }) => {
+const AssistantPanel: ReactFC<IAssistantPanel> = ({
+  turns,
+  columnRef,
+  onDismiss,
+  pinned,
+  onPin,
+  onUnpin,
+}) => {
   const titleId = useId();
   const rootRef = useRef<HTMLElement>(null);
 
@@ -72,9 +79,17 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({ turns, columnRef, onDismiss 
 
       <div className="min-h-0 shrink overflow-y-auto overscroll-contain">
         <div className="flex flex-col gap-5 px-5 py-4">
-          {turns.map(turn => (
-            <AnswerTurn key={turn.id} turn={turn} />
-          ))}
+          {turns.map(turn => {
+            const isPinned = pinned.some(entry => entry.turnId === turn.id);
+            return (
+              <AnswerTurn
+                key={turn.id}
+                turn={turn}
+                isPinned={isPinned}
+                onTogglePin={() => (isPinned ? onUnpin(turn.id) : onPin(turn))}
+              />
+            );
+          })}
         </div>
       </div>
     </section>
