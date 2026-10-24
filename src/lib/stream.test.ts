@@ -1,0 +1,29 @@
+import { describe, expect, it } from 'vitest';
+
+import { streamAnswer } from '../../mock/streamAnswer';
+import { applyEvent, createTurn, statusLabel } from './stream';
+
+describe('applyEvent', () => {
+  it('folds the documented sequence into a complete turn', async () => {
+    let turn = createTurn('t1', 'How is Marcus doing?');
+    for await (const event of streamAnswer(turn.prompt, { speed: 0 })) {
+      turn = applyEvent(turn, event);
+    }
+    expect(turn.phase).toBe('complete');
+    expect(turn.status).toBe('Reviewing 6 discovery calls');
+    expect(turn.text).toMatch(/^Marcus is improving/);
+    expect(turn.deltas).toHaveLength(3);
+    expect(turn.deltas.join('')).toBe(turn.text);
+    expect(turn.card?.rows).toHaveLength(3);
+  });
+
+  it('moves to streaming on the first text delta and reads past tense when complete', () => {
+    const start = createTurn('t1', 'q');
+    const reviewing = applyEvent(start, { type: 'status', label: 'Reviewing 6 discovery calls' });
+    expect(statusLabel(reviewing)).toBe('Reviewing 6 discovery calls');
+    const streaming = applyEvent(reviewing, { type: 'text', delta: 'Hi' });
+    expect(streaming.phase).toBe('streaming');
+    const done = applyEvent(streaming, { type: 'done' });
+    expect(statusLabel(done)).toBe('Reviewed 6 discovery calls');
+  });
+});
