@@ -1,12 +1,11 @@
 /**
- * Aria Sales Hub: coded host shell.
+ * Aria Sales Hub: the coded host shell.
  *
- * This responsive shell gives your AI Assistant a realistic product context.
- * Most candidate work belongs in the post-invocation experience rendered by
- * <AssistantExperience />. Small shell integration changes are welcome when
- * they help the proposed experience feel coherent.
+ * The shell owns invocation and the dashboard. App only composes: it holds the refs and the state
+ * the widgets share, and each widget owns its own markup.
  */
-import { useRef, useState } from 'react';
+import { useRef, useState, type FC as ReactFC } from 'react';
+
 import { AssistantExperience } from './AssistantExperience';
 import Brief from '@/widgets/Brief';
 import PromptBar from '@/widgets/PromptBar';
@@ -18,34 +17,34 @@ import useMediaQuery, { SHELL_DESKTOP_QUERY } from '@/hooks/useMediaQuery';
 import useNeedsBarClearance from '@/hooks/useNeedsBarClearance';
 import { cn } from '@/lib/utils';
 
-export const DEFAULT_PROMPT = 'How is Marcus doing on discovery calls this quarter?';
-
+const DEFAULT_PROMPT = 'How is Marcus doing on discovery calls this quarter?';
 const TODAY = 'Today · Friday, September 4';
 
-export function App() {
+const App: ReactFC = () => {
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
-  const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
-  const [submittedPrompt, setSubmittedPrompt] = useState(DEFAULT_PROMPT);
-  const [assistantIsOpen, setAssistantIsOpen] = useState(false);
-  const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
-  const triggerRef = useRef<HTMLInputElement>(null);
 
   const mainRef = useRef<HTMLElement>(null);
   const mainInnerRef = useRef<HTMLDivElement>(null);
   const columnRef = useRef<HTMLDivElement>(null);
+  const promptRef = useRef<HTMLInputElement>(null);
   const columnAnchor = useColumnAnchor(columnRef);
   useNeedsBarClearance(mainRef, mainInnerRef);
 
-  const invokeAssistant = (text?: string) => {
-    const next = (text ?? prompt).trim() || DEFAULT_PROMPT;
-    setPrompt(next);
-    setSubmittedPrompt(next);
+  const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
+  const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
+  const [submittedPrompt, setSubmittedPrompt] = useState(DEFAULT_PROMPT);
+  const [assistantIsOpen, setAssistantIsOpen] = useState(false);
+
+  const submitPrompt = () => {
+    const question = prompt.trim() || DEFAULT_PROMPT;
+    setPrompt(question);
+    setSubmittedPrompt(question);
     setAssistantIsOpen(true);
   };
 
   const dismissAssistant = () => {
     setAssistantIsOpen(false);
-    window.requestAnimationFrame(() => triggerRef.current?.focus());
+    window.requestAnimationFrame(() => promptRef.current?.focus());
   };
 
   return (
@@ -89,22 +88,24 @@ export function App() {
           </div>
         </div>
 
-        {assistantIsOpen ? (
+        {assistantIsOpen && (
           <AssistantExperience
             prompt={submittedPrompt}
             onDismiss={dismissAssistant}
-            triggerRef={triggerRef}
+            triggerRef={promptRef}
           />
-        ) : null}
+        )}
       </main>
 
       <PromptBar
-        ref={triggerRef}
+        ref={promptRef}
         value={prompt}
         onValueChange={setPrompt}
-        onSubmit={() => invokeAssistant()}
+        onSubmit={submitPrompt}
         anchor={columnAnchor}
       />
     </div>
   );
-}
+};
+
+export default App;
