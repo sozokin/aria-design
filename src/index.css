@@ -215,9 +215,12 @@
   --sidebar-w: 15rem;
   --content-max: 72rem;
   --assistant-w: 35rem;
+  /* The prompt bar's height: one line of its field. App raises it while a question runs to more
+     lines (up to three), and whatever is stacked above the bar reads it. */
+  --prompt-bar-h: 3.25rem;
   /* Tallest the answer panel may grow on desktop. Its top edge is placed where it would sit at this
      height, so growth only extends downward; longer answers scroll inside rather than raising the top. */
-  --assistant-panel-max: min(60dvh, calc(100dvh - 8rem));
+  --assistant-panel-max: min(60dvh, calc(100dvh - var(--prompt-bar-h) - 4.75rem));
   --z-assistant: 30;
   --z-trigger: 40;
   --z-hover-card: 50;

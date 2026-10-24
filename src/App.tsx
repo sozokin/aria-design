@@ -4,7 +4,7 @@
  * The shell owns invocation and the dashboard. App only composes: it holds the refs and the state
  * the widgets share, and each widget owns its own markup.
  */
-import { useRef, useState, type FC as ReactFC } from 'react';
+import { useRef, useState, type CSSProperties, type FC as ReactFC } from 'react';
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 
@@ -15,7 +15,7 @@ import ChatHistory from '@/widgets/AssistantExperience/ChatHistory';
 import LiveAnnouncer from '@/widgets/AssistantExperience/LiveAnnouncer';
 import PinnedAnswer, { pinnedAnswerId } from '@/widgets/AssistantExperience/PinnedAnswer';
 import Brief from '@/widgets/Brief';
-import PromptBar from '@/widgets/PromptBar';
+import PromptBar, { promptBarHeight } from '@/widgets/PromptBar';
 import Sidebar from '@/widgets/Sidebar';
 import TeamOverview from '@/widgets/TeamOverview';
 import InlineTeamOverview from '@/widgets/TeamOverview/InlineTeamOverview';
@@ -41,13 +41,15 @@ const App: ReactFC = () => {
   const mainRef = useRef<HTMLElement>(null);
   const mainInnerRef = useRef<HTMLDivElement>(null);
   const columnRef = useRef<HTMLDivElement>(null);
-  const promptRef = useRef<HTMLInputElement>(null);
+  const promptRef = useRef<HTMLTextAreaElement>(null);
   const columnAnchor = useColumnAnchor(columnRef);
   useNeedsBarClearance(mainRef, mainInnerRef);
 
   const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
   // The bar starts empty; the opening question is offered by the brief's suggested next step chip.
   const [prompt, setPrompt] = useState('');
+  // How many lines the bar shows. The panel and the pill sit above the bar, so they read its height.
+  const [promptLines, setPromptLines] = useState(1);
 
   const thread = assistant.turns[0];
   const latestTurn = assistant.turns[assistant.turns.length - 1];
@@ -164,7 +166,10 @@ const App: ReactFC = () => {
   };
 
   return (
-    <div className={cn('app-shell', sidebarIsCompact ? 'sidebar-compact' : '')}>
+    <div
+      className={cn('app-shell', sidebarIsCompact ? 'sidebar-compact' : '')}
+      style={{ '--prompt-bar-h': promptBarHeight(promptLines) } as CSSProperties}
+    >
       <Sidebar
         isCompact={sidebarIsCompact}
         onCompactChange={setSidebarIsCompact}
@@ -310,6 +315,7 @@ const App: ReactFC = () => {
         hasUnseenAnswer={assistant.hasUnseenAnswer}
         onReopen={openWithFocus}
         onNewChat={startNewChat}
+        onLinesChange={setPromptLines}
       />
 
       {/* Toasts sit above the prompt bar's line, never over it: the bar is 1.5rem from the bottom and
