@@ -65,13 +65,18 @@ export interface ICoachingCard {
   onTogglePin: () => void;
   /** When given, the suggested next step becomes a button that asks it as a follow-up. */
   onAskNextStep?: (question: string) => void;
+  /** Rows reveal with a stagger on first render. Off for the pinned copy, which arrives revealed. */
+  revealRows?: boolean;
   className?: string;
 }
 
 export interface ISkillRow {
   row: CoachingRow;
+  /** Position in the card's reveal order, for the stagger. */
+  index: number;
   /** The lowest score on the card gets the coaching-focus note. */
   isLowest: boolean;
+  reveal: boolean;
 }
 
 export interface INextStepChip {

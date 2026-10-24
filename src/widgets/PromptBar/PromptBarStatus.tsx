@@ -19,20 +19,27 @@ const PromptBarStatus: ReactFC<IPromptBarStatus> = ({
 
   if (hasUnseenAnswer) {
     return (
-      <Badge
-        asChild
-        variant="secondary"
-        className="h-6 shrink-0 gap-1.5 bg-accent-muted px-2.5 text-accent-muted-foreground hover:bg-[color-mix(in_oklch,var(--accent-muted),var(--accent)_8%)]"
-      >
-        <button type="button" onClick={onReopen}>
-          <span
-            className="size-1.5 rounded-full bg-accent motion-safe:animate-pulse"
-            aria-hidden="true"
-          />
-          Answer ready
-          <span className="sr-only">. Open the answer</span>
-        </button>
-      </Badge>
+      <span className="relative shrink-0">
+        {/* Radiates until the pill is clicked or the panel opens, which unmounts the pill. */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-accent motion-safe:animate-ready-pulse"
+        />
+        <Badge
+          asChild
+          variant="secondary"
+          className="relative h-6 gap-1.5 bg-accent-muted px-2.5 text-accent-muted-foreground hover:bg-[color-mix(in_oklch,var(--accent-muted),var(--accent)_8%)]"
+        >
+          <button type="button" onClick={onReopen}>
+            <span
+              className="size-1.5 rounded-full bg-accent motion-safe:animate-pulse"
+              aria-hidden="true"
+            />
+            Answer ready
+            <span className="sr-only">. Open the answer</span>
+          </button>
+        </Badge>
+      </span>
     );
   }
 

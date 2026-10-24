@@ -24,11 +24,14 @@ const CoachingCard: ReactFC<ICoachingCard> = ({
   isPinned,
   onTogglePin,
   onAskNextStep,
+  revealRows = true,
   className,
 }) => {
   const id = useId();
   const groups = groupByBand(card.rows);
   const lowest = lowestRow(card.rows);
+  // Counts rows across all groups, so the reveal stagger runs down the whole card.
+  let rowIndex = 0;
 
   return (
     <motion.article
@@ -100,7 +103,13 @@ const CoachingCard: ReactFC<ICoachingCard> = ({
           </h4>
           <ul className="mt-2.5 flex flex-col gap-3">
             {rows.map(row => (
-              <SkillRow key={row.id} row={row} isLowest={row.id === lowest?.id} />
+              <SkillRow
+                key={row.id}
+                row={row}
+                index={rowIndex++}
+                isLowest={row.id === lowest?.id}
+                reveal={revealRows}
+              />
             ))}
           </ul>
         </section>
