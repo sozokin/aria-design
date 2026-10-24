@@ -227,13 +227,15 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
             // than a transform: the layout animation measures the box without transforms, and a
             // translate would send it towards the wrong place first. Percentages, not vw: for a
             // fixed box they exclude the scrollbar, so the centre is the visible centre.
-            'inset-x-0 top-[5dvh] bottom-[5.75rem] mx-auto w-[min(calc(100%_-_2rem),max(80%,56rem))] flex-row'
+            // The bottom follows the bar's height with a transition: the top is fixed, so Motion's
+            // position-only layout sees no move and leaves this to CSS.
+            'inset-x-0 top-[5dvh] bottom-[calc(var(--prompt-bar-h)+2.5rem)] mx-auto w-[min(calc(100%_-_2rem),max(80%,56rem))] flex-row transition-[bottom] duration-(--duration-base) ease-(--ease-out)'
           : cn(
-              'inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] max-h-[calc(100dvh-7.25rem-env(safe-area-inset-bottom,0px))] flex-col shadow-md shell:inset-x-auto shell:max-h-(--assistant-panel-max)',
+              'inset-x-3 bottom-[calc(var(--prompt-bar-h)+2rem+env(safe-area-inset-bottom,0px))] max-h-[calc(100dvh-var(--prompt-bar-h)-4rem-env(safe-area-inset-bottom,0px))] flex-col shadow-md shell:inset-x-auto shell:max-h-(--assistant-panel-max)',
               // Docked: on the bar, 1rem above it. Raised: top edge where it sits at full height.
               isDocked
-                ? 'shell:bottom-[5.75rem]'
-                : 'shell:top-[calc(100dvh-5.75rem-var(--assistant-panel-max))] shell:bottom-auto',
+                ? 'shell:bottom-[calc(var(--prompt-bar-h)+2.5rem)]'
+                : 'shell:top-[calc(100dvh-var(--prompt-bar-h)-2.5rem-var(--assistant-panel-max))] shell:bottom-auto',
             ),
       )}
       // Position only, usually: the move from docked to raised glides, while the size is left to the

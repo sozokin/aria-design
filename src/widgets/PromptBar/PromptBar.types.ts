@@ -11,7 +11,7 @@ export interface IPromptBarStatus {
 }
 
 export interface IPromptBar extends IPromptBarStatus {
-  ref: Ref<HTMLInputElement>;
+  ref: Ref<HTMLTextAreaElement>;
   value: string;
   onValueChange: (value: string) => void;
   onSubmit: () => void;
@@ -23,4 +23,6 @@ export interface IPromptBar extends IPromptBarStatus {
   anchor: IColumnAnchor | null;
   /** The plus beside the bar: starts a new chat. */
   onNewChat: () => void;
+  /** How many lines the bar is showing (one to three), so the host can raise what sits above it. */
+  onLinesChange: (lines: number) => void;
 }
