@@ -12,7 +12,7 @@ import {
   Shield,
   Target,
   UsersRound,
-} from "lucide-react";
+} from 'lucide-react';
 
 export const Icons = {
   arrowUp: ArrowUp,

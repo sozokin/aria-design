@@ -14,7 +14,7 @@ export type CoachingCard = {
 };
 
 export type StreamEvent =
-  | { type: "status"; label: string }
-  | { type: "text"; delta: string }
-  | { type: "artifact"; kind: "coaching-card"; data: CoachingCard }
-  | { type: "done" };
+  | { type: 'status'; label: string }
+  | { type: 'text'; delta: string }
+  | { type: 'artifact'; kind: 'coaching-card'; data: CoachingCard }
+  | { type: 'done' };
