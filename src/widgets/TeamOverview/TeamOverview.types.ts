@@ -22,7 +22,7 @@ export interface IInlineTeamOverview extends Omit<ITeamOverview, 'variant'> {
 export interface ITeamOverviewDrawer
   extends
     Omit<ITeamOverview, 'variant'>,
-    Pick<IChatHistory, 'chats' | 'activeChatId' | 'onSwitchChat'> {
+    Pick<IChatHistory, 'chats' | 'activeChatId' | 'onSwitchChat' | 'onChoiceClosed'> {
   anchor: IToggleAnchor;
   /** The page has scrolled, so content passes under the toggle and it needs a surface. */
   surfaced: boolean;

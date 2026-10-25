@@ -4,7 +4,7 @@
  * The shell owns invocation and the dashboard. App only composes: it holds the refs and the state
  * the widgets share, and each widget owns its own markup.
  */
-import { useRef, useState, type CSSProperties, type FC as ReactFC } from 'react';
+import { useMemo, useRef, useState, type CSSProperties, type FC as ReactFC } from 'react';
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 
@@ -40,6 +40,9 @@ const App: ReactFC = () => {
 
   const columnRef = useRef<HTMLDivElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
+  const sendButtonRef = useRef<HTMLButtonElement>(null);
+  // The open panel places itself between these two in the tab order.
+  const entryPoint = useMemo(() => ({ field: promptRef, send: sendButtonRef }), []);
   const columnAnchor = useColumnAnchor(columnRef);
 
   const [sidebarIsCompact, setSidebarIsCompact] = useState(false);
@@ -54,29 +57,39 @@ const App: ReactFC = () => {
   const latestCard = [...assistant.turns].reverse().find(turn => turn.card)?.card;
   const suggestedNextStep = latestCard?.nextStep ?? DEFAULT_PROMPT;
 
-  // Whether the next opening should move focus into the panel. Opening by focusing the input must
-  // not (WCAG 3.2.1: focus alone never changes context); opening by submitting may.
+  // Whether the next opening moves focus into the panel. Every opening does, except one that comes
+  // from focusing or typing in the bar: focus alone never changes context (WCAG 3.2.1), and the
+  // caret stays where the reader is typing. Tab from the field then enters the panel (AssistantPanel
+  // places itself between the field and the send button in the tab order).
   const [panelTakesFocus, setPanelTakesFocus] = useState(true);
-  // Focus the app itself returns to the input (after a close) must not reopen the panel.
-  const suppressFocusOpen = useRef(false);
+  // Asks an open panel to take focus. Opening handles a closed one; this covers a panel that is
+  // already up when its content is replaced (a new chat, an asked chip that unmounts, a history
+  // sheet that has just closed). The panel ignores it while focus is already inside.
+  const [panelFocusRequest, setPanelFocusRequest] = useState(0);
+  const focusPanel = () => setPanelFocusRequest(request => request + 1);
   const panelScroll = usePanelScrollMemory(`${assistant.activeChatId}:${assistant.turns.length}`);
 
+  // A suggested step asked from a chip: in the brief, on a pinned card, or in the panel itself (the
+  // empty state's chip unmounts as the answer starts, so focus would otherwise drop to the page).
   const askWithFocus = (question: string) => {
     setPanelTakesFocus(true);
     assistant.ask(question);
+    focusPanel();
   };
 
-  // The bar's "Answer ready" pill: the answer that finished out of view, in whichever chat.
+  // The bar's "Answer ready" pill: the answer that finished out of view, in whichever chat. The pill
+  // unmounts once the answer is seen, so focus moves to the panel showing it.
   const openUnseenAnswer = () => {
     setPanelTakesFocus(true);
     assistant.openUnseenAnswer();
+    focusPanel();
   };
 
   // The send button does what its arrow shows (and Enter on desktop with it): with text in the bar
   // it asks the question and clears the bar; with an empty bar it opens the panel if it is closed
-  // and closes it if it is open. Opening this way is like the plus: the panel is a companion, and
-  // on desktop focus goes to the bar, ready for the question. On mobile nothing takes focus, so the
-  // keyboard stays down and the panel has the whole screen to itself; closing drops focus there too.
+  // and closes it if it is open. Opening with it moves focus into the panel. Asking does too when
+  // the panel was closed; when it is already up (typing brings it up) the caret stays in the field,
+  // Tab from there enters the panel, and the live region carries the answer's progress.
   const submitPrompt = () => {
     const text = prompt.trim();
     if (text) {
@@ -86,65 +99,98 @@ const App: ReactFC = () => {
     } else if (assistant.isOpen) {
       dismissAssistant();
     } else {
-      setPanelTakesFocus(false);
+      setPanelTakesFocus(true);
       assistant.open();
-      if (isDesktop) promptRef.current?.focus();
     }
   };
 
   // Focusing, clicking or typing in the bar brings the panel up as a companion: the thread behind a
   // closed panel, or the empty "How can I help?" state before anything has been asked. Click and
-  // typing matter because after Escape the input is already focused.
+  // typing matter because after Escape the input may still be focused.
   const reopenFromBar = () => {
-    if (assistant.isOpen || suppressFocusOpen.current) return;
+    if (assistant.isOpen) return;
     setPanelTakesFocus(false);
     assistant.open();
   };
 
-  // Returns focus to the bar without that focus counting as "the user reopened the panel".
-  const focusPromptBar = () =>
-    window.requestAnimationFrame(() => {
-      suppressFocusOpen.current = true;
-      promptRef.current?.focus();
-      window.setTimeout(() => {
-        suppressFocusOpen.current = false;
-      }, 0);
-    });
-
-  // Closing hands focus back to the entry point on desktop (Escape, the close button). On mobile
-  // that would raise the keyboard again under a panel that has just gone, so focus is dropped
-  // instead: panel, focus and keyboard leave together.
+  // Closing (Escape, the close button, the send arrow) hands focus back to the entry point: the send
+  // button. On desktop, focus that is already in the bar stays there, so Escape while typing keeps
+  // the field. On mobile it always moves to the button: iOS does not focus a tapped button, so the
+  // field may still hold focus, and leaving it there would keep the keyboard up over a closed panel.
   const dismissAssistant = () => {
     assistant.close();
-    if (isDesktop) focusPromptBar();
-    else (document.activeElement as HTMLElement | null)?.blur();
+    const send = sendButtonRef.current;
+    if (!send) return;
+    if (isDesktop && send.form?.contains(document.activeElement)) return;
+    send.focus({ preventScroll: true });
   };
 
-  // The plus beside the bar: the panel opens on its empty state as a companion, and focus goes to
-  // the bar, ready for the first question. Focused here, inside the tap, not deferred: iOS only
-  // honours a programmatic focus (and raises the keyboard) while the user's gesture is running.
-  // The bar's focus handler would open the panel too, which newChat is already doing.
+  // The plus beside the bar, or the expanded panel's New chat button: the panel opens on its empty
+  // state with focus on it, so Tab reaches the suggested first question.
   const startNewChat = () => {
-    setPanelTakesFocus(false);
+    setPanelTakesFocus(true);
     assistant.newChat();
-    promptRef.current?.focus();
+    focusPanel();
   };
 
   // A chat chosen in a history sheet (the rail's, or the mobile menu's) or in the expanded panel's
-  // left pane: the panel shows it as a companion, since a sheet returns focus to its own button as
-  // it closes and the pane keeps it; the live region names the chat.
+  // left pane; the live region names the chat. The panel does not take focus as it opens: a sheet
+  // still holds focus inside it then. Once that sheet has closed it hands focus to the panel
+  // (onChoiceClosed). The pane is inside the panel, so focus is already there.
   const openChatFromHistory = (chatId: string) => {
     setPanelTakesFocus(false);
     assistant.switchChat(chatId);
   };
 
+  // Tells each undo toast apart, so focus goes to the Undo of the toast just raised.
+  const undoToastCount = useRef(0);
+
+  // Focuses the element `selector` matches as soon as it is in the page. Watched for rather than
+  // polled on animation frames, which a background tab slows to a crawl.
+  const focusWhenRendered = (selector: string) => {
+    const focus = (element: HTMLElement) => {
+      element.focus({ preventScroll: true });
+      // Leaving a toast makes sonner refocus whatever had focus before the toast (an Unpin button):
+      // the second call wins over that.
+      if (document.activeElement !== element) element.focus({ preventScroll: true });
+    };
+    const rendered = document.querySelector<HTMLElement>(selector);
+    if (rendered) {
+      focus(rendered);
+      return;
+    }
+    const observer = new MutationObserver(() => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) return;
+      observer.disconnect();
+      focus(element);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.setTimeout(() => observer.disconnect(), UNDO_WINDOW_MS);
+  };
+
+  // A toast that held focus has gone (its time ran out, or it was closed): focus goes to the entry
+  // point rather than the page. After sonner's exit, since focus stays on the leaving toast until
+  // then. An Undo that restored its card has already moved focus to the card, so that is left alone.
+  const returnFocusFromToast = () =>
+    window.setTimeout(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body || active.closest('[data-removed="true"]')) {
+        sendButtonRef.current?.focus({ preventScroll: true });
+      }
+    }, 400);
+
   // Every unpin offers its own undo for UNDO_WINDOW_MS; each toast restores only its own card.
   // The toast has no timer of its own (sonner's pauses on hover, the undo window does not): its
   // progress bar runs for exactly the undo window and dismisses it, so bar, toast and Undo end together.
+  // The Unpin button leaves with its card, so focus moves to the toast's Undo, the next thing the
+  // reader may want; screen readers hear the button, then the toast's own message.
   const unpinWithUndo = (turnId: string) => {
     const entry = assistant.pinned.find(pin => pin.turnId === turnId);
     assistant.unpin(turnId);
+    const toastClass = `undo-toast-${++undoToastCount.current}`;
     const toastId = toast('Removed from your dashboard', {
+      className: toastClass,
       description: (
         <>
           {entry && `${entry.card.rep} · ${entry.card.period}`}
@@ -152,12 +198,28 @@ const App: ReactFC = () => {
           <span className="sr-only">
             {` Undo is available for ${UNDO_WINDOW_MS / 1000} seconds.`}
           </span>
-          <ToastProgress durationMs={UNDO_WINDOW_MS} onComplete={() => toast.dismiss(toastId)} />
+          <ToastProgress
+            durationMs={UNDO_WINDOW_MS}
+            onComplete={() => {
+              toast.dismiss(toastId);
+              returnFocusFromToast();
+            }}
+          />
         </>
       ),
       duration: Infinity,
-      action: { label: 'Undo', onClick: () => assistant.undoUnpin(turnId) },
+      // The restored card takes focus. It does so itself when it mounts, but an Undo pressed while
+      // the card is still collapsing revives that card instead of mounting a new one.
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          assistant.undoUnpin(turnId);
+          focusWhenRendered(`#${pinnedAnswerId(turnId)}`);
+        },
+      },
+      onDismiss: returnFocusFromToast,
     });
+    focusWhenRendered(`.${toastClass} [data-action]`);
   };
 
   const jumpToPinned = (turnId: string) => {
@@ -207,6 +269,7 @@ const App: ReactFC = () => {
                         chats={assistant.chats}
                         activeChatId={assistant.activeChatId}
                         onSwitchChat={openChatFromHistory}
+                        onChoiceClosed={focusPanel}
                       />
                     )}
                   </div>
@@ -247,9 +310,8 @@ const App: ReactFC = () => {
                         key={pin.turnId}
                         pinned={pin}
                         shareCardLayout={isDesktop}
-                        // Focus is left to drop with the Unpin button rather than sent to the bar:
-                        // the toast would hand it back to the bar on Undo, and the bar opens the
-                        // panel when it is focused. The undone card takes focus itself.
+                        // Focus moves to the toast's Undo (unpinWithUndo); the undone card takes
+                        // focus itself.
                         onUnpin={() => unpinWithUndo(pin.turnId)}
                         onAskNextStep={askWithFocus}
                       />
@@ -280,6 +342,7 @@ const App: ReactFC = () => {
                       chats={assistant.chats}
                       activeChatId={assistant.activeChatId}
                       onSwitchChat={openChatFromHistory}
+                      onChoiceClosed={focusPanel}
                       withLabel
                     />
                   </motion.div>
@@ -301,10 +364,12 @@ const App: ReactFC = () => {
             onSwitchChat={openChatFromHistory}
             onNewChat={startNewChat}
             takeFocus={panelTakesFocus}
+            focusRequest={panelFocusRequest}
             initialScrollTop={panelScroll.resumeTop}
             onScrollChange={panelScroll.remember}
             anchor={columnAnchor}
             onDismiss={dismissAssistant}
+            entryPoint={entryPoint}
             onClosed={assistant.onClosed}
             pinned={assistant.pinned}
             onAsk={askWithFocus}
@@ -315,7 +380,7 @@ const App: ReactFC = () => {
               isDesktop ? assistant.pin(turn) : assistant.closeThen(() => assistant.pin(turn))
             }
             // An unpin asked from the chat waits for the panel to leave, so the card is seen going.
-            // Focus drops with the panel, for the same reason as on the dashboard.
+            // Focus then moves to the toast's Undo, as on the dashboard.
             onUnpin={turnId => assistant.closeThen(() => unpinWithUndo(turnId))}
           />
         </LayoutGroup>
@@ -323,6 +388,7 @@ const App: ReactFC = () => {
 
       <PromptBar
         ref={promptRef}
+        sendButtonRef={sendButtonRef}
         value={prompt}
         onValueChange={setPrompt}
         onSubmit={submitPrompt}

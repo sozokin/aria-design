@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 
 import type { CoachingCard, CoachingRow } from '../../../mock/types';
 import type { IAnnouncement, IChatSummary, IPinnedTurn, ITurn } from '@/types/assistant.types';
@@ -14,6 +14,19 @@ export interface IChatList {
 export interface IChatHistory extends IChatList {
   /** Icon and "Chat history" rather than the icon alone. */
   withLabel?: boolean;
+  /**
+   * The sheet has closed after a chat was chosen. Focus is not returned to the History button then;
+   * the host moves it to the panel showing that chat.
+   */
+  onChoiceClosed?: () => void;
+}
+
+/** The prompt bar's controls that the open panel sits between in the tab order. */
+export interface IEntryPoint {
+  /** The question field: Tab from it enters the panel. */
+  field: RefObject<HTMLTextAreaElement | null>;
+  /** The send button: Tab from the panel's last control lands here. */
+  send: RefObject<HTMLButtonElement | null>;
 }
 
 export interface IAssistantPanel extends IChatList {
@@ -28,6 +41,11 @@ export interface IAssistantPanel extends IChatList {
   suggestedQuestion: string;
   /** Whether to move focus into the dialog on open. */
   takeFocus: boolean;
+  /**
+   * Raised by the host to move focus into the already open dialog. Ignored while focus is inside it,
+   * so a control the reader is on keeps focus.
+   */
+  focusRequest: number;
   /** Scroll position to resume at, when the reader had scrolled before closing. */
   initialScrollTop?: number;
   /** Reports the scroll position so the host can remember it across a close. */
@@ -37,8 +55,13 @@ export interface IAssistantPanel extends IChatList {
    * rather than measured here, so the panel has its final width on its very first layout.
    */
   anchor: IColumnAnchor | null;
-  /** The host returns focus to the entry point. */
+  /** The host returns focus to the entry point (the prompt bar's send button). */
   onDismiss: () => void;
+  /**
+   * The prompt bar's field and send button. The panel renders before the bar, so while it is open
+   * it places itself between them in the tab order: field → panel → send button.
+   */
+  entryPoint: IEntryPoint;
   pinned: IPinnedTurn[];
   /** Asks a follow-up in this thread (the card's suggested next step). */
   onAsk: (question: string) => void;
