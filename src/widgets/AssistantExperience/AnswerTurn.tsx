@@ -8,7 +8,17 @@ import StreamedText from './StreamedText';
 
 import { IAnswerTurn } from './AssistantExperience.types';
 
-/** One question and its answer: status, text and card, each revealing in place of a skeleton. */
+/**
+ * One question and its answer, in the panel.
+ *
+ * Shows, top to bottom:
+ * - the question as a message bubble (follow-ups only),
+ * - the status line,
+ * - the answer text, and
+ * - the coaching card.
+ *
+ * The text and the card each show a grey placeholder until they arrive.
+ */
 const AnswerTurn: ReactFC<IAnswerTurn> = ({
   turn,
   isFollowUp,
@@ -33,7 +43,7 @@ const AnswerTurn: ReactFC<IAnswerTurn> = ({
       <Reveal
         ready={turn.text !== ''}
         skeleton={<AnswerSkeleton.Text />}
-        // Hold the skeleton's height while chunks arrive, so the block does not shrink and regrow.
+        // Keep the placeholder's height while text arrives, so the block does not shrink and grow.
         className={isStreaming ? 'min-h-[4.125rem]' : ''}
       >
         <StreamedText deltas={turn.deltas} streaming={isStreaming} />
@@ -43,7 +53,7 @@ const AnswerTurn: ReactFC<IAnswerTurn> = ({
         {turn.card && (
           <CoachingCard
             card={turn.card}
-            // The pinned copy owns the shared layout id while this turn is pinned.
+            // Once pinned, the dashboard copy takes over the fly-to-dashboard id.
             layoutId={isPinned || !shareCardLayout ? undefined : `coaching-card-${turn.id}`}
             isPinned={isPinned}
             onTogglePin={onTogglePin}

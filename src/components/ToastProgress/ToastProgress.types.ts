@@ -1,6 +1,7 @@
+/** Props for `ToastProgress`. */
 export interface IToastProgress {
-  /** How long the bar takes to fill: the toast's whole time on screen. */
+  /** How long the bar takes to fill, in milliseconds: the toast's whole time on screen. */
   durationMs: number;
-  /** Fires when the bar is full; the host dismisses the toast here. */
+  /** Called when the bar is full. `App` closes the toast here. */
   onComplete: () => void;
 }

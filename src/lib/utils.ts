@@ -1,6 +1,12 @@
 export { cn } from 'cn';
 
-/** "Marcus Bell" → "MB". */
+/**
+ * Turns a name into up to two capital initials, for avatars.
+ *
+ * @example getInitials('Marcus Bell') // "MB"
+ * @param name - A full name.
+ * @returns The initials.
+ */
 export const getInitials = (name: string) =>
   name
     .split(' ')

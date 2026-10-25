@@ -11,15 +11,17 @@ import { PRIMARY_NAV, SECONDARY_NAV } from './nav';
 
 import { IMobileNav } from './Sidebar.types';
 
+/** DOM id of the mobile menu, so the avatar button can point to it. */
 export const MOBILE_NAV_ID = 'mobile-nav';
 
 /**
- * The sidebar's navigation, dropped down beneath the mobile top bar. Opens from the avatar;
- * Escape, the close button and the backdrop all close it.
+ * Mobile only: the navigation as a menu that drops down below the top bar.
+ *
+ * The avatar opens it. Escape, the close button and the dimmed backdrop all close it.
  */
 const MobileNav: ReactFC<IMobileNav> = ({ open, onClose }) => {
   const navRef = useRef<HTMLElement>(null);
-  // Reduced motion only switches off transforms; the height snaps here instead of sliding.
+  /** With reduced motion the menu's height snaps open instead of sliding. */
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -38,7 +40,7 @@ const MobileNav: ReactFC<IMobileNav> = ({ open, onClose }) => {
   }, [open, onClose]);
 
   return (
-    // The dropdown sits on a backdrop over the page, so the page holds still while it is open.
+    // While the menu is open, the page behind it cannot scroll.
     <RemoveScroll enabled={open} className="contents">
       <AnimatePresence>
         {open && (
@@ -63,7 +65,7 @@ const MobileNav: ReactFC<IMobileNav> = ({ open, onClose }) => {
               <div className="mb-2 flex items-center gap-2">
                 <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border border-input bg-popover px-2.5 text-text-secondary transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/60">
                   <Icons.search className="size-4 shrink-0" aria-hidden="true" />
-                  {/* 16px text, so iOS does not zoom into the field. */}
+                  {/* 16px text, so iPhones do not zoom in when the field is tapped. */}
                   <input
                     type="search"
                     placeholder="Search"

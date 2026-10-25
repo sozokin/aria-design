@@ -7,10 +7,10 @@ import { applyEvent, createTurn } from '@/lib/stream';
 import type { CoachingCard } from '../../mock/types';
 import type { IAnnouncement, IAssistant, IPinnedTurn, ITurn } from '@/types/assistant.types';
 
-/** How long an unpin can be undone. */
+/** How long, in milliseconds, an unpin can still be undone. */
 export const UNDO_WINDOW_MS = 10_000;
 
-/** An unpinned card waiting for its undo, with the place it left and the timer that forgets it. */
+/** A card that was just unpinned and can still be put back. */
 interface IUndoable {
   turn: IPinnedTurn;
   index: number;
@@ -18,43 +18,50 @@ interface IUndoable {
 }
 
 /**
- * Owns the assistant's conversations: the turns of every chat, which chat is active, whether the
- * panel is open, what is pinned and what the live region should say. It lives in the host (App)
- * rather than the panel so an answer keeps streaming while the panel is closed and a pinned card
- * outlives the panel on the dashboard. Each returned value is documented on `IAssistant`.
+ * Holds everything the AI Assistant knows: every chat, the open panel, pinned cards and what
+ * screen readers should hear.
  *
- * Flow: `ask` adds an empty turn to the active chat and starts `consume`, which pulls the mock
- * stream one event at a time and folds each into that turn with `applyEvent` (status, three text
- * deltas, the card, done).
+ * It lives in `App`, not in the panel, so that:
+ * - an answer keeps streaming while the panel is closed, and
+ * - a pinned card stays on the dashboard after the panel has gone.
+ *
+ * How an answer arrives: `ask` adds an empty turn and starts `consume`. `consume` reads the mock
+ * stream one event at a time (status, three text chunks, the card, done) and adds each event to
+ * that turn with `applyEvent`.
+ *
+ * @returns The state and actions described on `IAssistant`.
  */
 function useAssistant(): IAssistant {
-  // Every chat's turns, oldest first. Each turn is one question and the answer streaming into it,
-  // tagged with the chat it was asked in.
+  /** Every chat's turns, oldest first. A turn is one question plus its answer. */
   const [allTurns, setAllTurns] = useState<ITurn[]>([]);
-  // The chat the panel shows. Switching only changes which turns are picked out below.
+  /** The chat the panel is showing. */
   const [activeChatId, setActiveChatId] = useState('chat-1');
-  // Whether the panel shows. Separate from streaming: closing hides it, the answer keeps arriving.
+  /** Whether the panel is on screen. Closing it does not stop an answer from streaming. */
   const [isOpen, setIsOpen] = useState(false);
-  // Desktop: the panel at most of the screen's size. Kept across closes; the host ignores it on mobile.
+  /** Desktop only: the panel fills most of the screen. Remembered across closes. */
   const [isExpanded, setIsExpanded] = useState(false);
-  // Cards on the dashboard, newest first. Kept here so they outlive the panel.
+  /** Cards pinned to the dashboard, newest first. */
   const [pinned, setPinned] = useState<IPinnedTurn[]>([]);
-  // The chat whose answer finished out of view (behind a closed panel, or while another chat was
-  // active) and has not been looked at since; the prompt bar shows "Answer ready" for it.
+  /**
+   * A chat whose answer finished while the reader was not looking (panel closed, or another chat
+   * open). The prompt bar shows "Answer ready" for it.
+   */
   const [unseenChatId, setUnseenChatId] = useState<string | null>(null);
-  // What the live region says next: the status, then "Answer ready". Text chunks are not announced.
+  /** The next thing screen readers should hear. Text chunks are never announced. */
   const [announcement, setAnnouncement] = useState<IAnnouncement | null>(null);
 
-  // The stream reads these when it finishes, long after the render that started it.
+  /** Copies of `isOpen` and `activeChatId` that the stream can read when it finishes. */
   const isOpenRef = useRef(false);
   const activeChatIdRef = useRef(activeChatId);
-  // Number the turns' and chats' ids. Refs, because a new id never needs a re-render.
+  /** Counters for new turn and chat ids. Refs, because a new id never needs a re-render. */
   const turnCount = useRef(0);
   const chatCount = useRef(1);
-  // Unpinned cards that can still be undone, by turn id. A ref: the toasts read it, nothing renders it.
+  /** Unpinned cards that can still be undone, by turn id. */
   const undoable = useRef(new Map<string, IUndoable>());
-  // What waits for the panel to leave the screen (a pin on mobile, where there is no glide to
-  // follow; an unpin asked from the chat), so the dashboard changes in view, not behind the panel.
+  /**
+   * Something to run once the panel has finished leaving the screen, so the dashboard changes
+   * where the reader can see it: a pin on mobile, or an unpin started from the panel.
+   */
   const afterClose = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -62,26 +69,27 @@ function useAssistant(): IAssistant {
     activeChatIdRef.current = activeChatId;
   }, [isOpen, activeChatId]);
 
-  // A fresh id makes the live region repeat a message even when its text is unchanged.
+  /** Says `text` to screen readers. A fresh id makes a repeated message be read again. */
   const announce = useCallback((text: string) => setAnnouncement({ id: Date.now(), text }), []);
 
   const turns = allTurns.filter(turn => turn.chatId === activeChatId);
   const chats = chatSummaries(allTurns);
-  // An answer still arriving where the reader is not looking: in another chat, or behind a closed
-  // panel. The prompt bar shows a pulse for it.
+  /**
+   * An answer is still arriving somewhere the reader is not looking (another chat, or behind a
+   * closed panel). The prompt bar shows a pulsing dot for it.
+   */
   const isAnswering = allTurns.some(
     turn => turn.phase !== 'complete' && (turn.chatId !== activeChatId || !isOpen),
   );
 
-  // Pulls one answer from the mock stream into its turn, event by event.
+  /** Reads one answer from the mock stream into its turn, event by event. */
   const consume = useCallback(
     async (id: string, chatId: string, prompt: string) => {
       let card: CoachingCard | null = null;
 
       for await (const event of streamAnswer(prompt)) {
-        // The functional updater sees the latest turns, not the ones from when this loop began;
-        // only this answer's turn changes, so a follow-up never touches an earlier one, and an
-        // answer keeps landing in its own chat after the reader has switched to another.
+        // Update only this answer's turn, using the latest list. That way a follow-up never
+        // changes an earlier answer, and an answer still lands in its own chat after a switch.
         setAllTurns(all => all.map(turn => (turn.id === id ? applyEvent(turn, event) : turn)));
 
         if (event.type === 'status') announce(event.label);
@@ -92,7 +100,7 @@ function useAssistant(): IAssistant {
               ? `Answer ready. Coaching card for ${card.rep} with ${card.rows.length} scored skills.`
               : 'Answer ready.',
           );
-          // Finished out of view: behind a closed panel, or in a chat the reader has left.
+          // The reader missed it (panel closed, or another chat open): mark it as unseen.
           if (!isOpenRef.current || activeChatIdRef.current !== chatId) setUnseenChatId(chatId);
         }
       }
@@ -100,8 +108,7 @@ function useAssistant(): IAssistant {
     [announce],
   );
 
-  // A new question in the active chat: add its empty turn, show the panel and start streaming
-  // without waiting for it.
+  /** Asks a question in the active chat: adds an empty turn, opens the panel, starts streaming. */
   const ask = useCallback(
     (prompt: string) => {
       const id = `turn-${++turnCount.current}`;
@@ -113,17 +120,19 @@ function useAssistant(): IAssistant {
     [consume, activeChatId],
   );
 
-  // Back to the active chat without asking anything; looking at it clears its "unseen".
+  /** Opens the panel on the active chat. Looking at it clears its "unseen" mark. */
   const open = useCallback(() => {
     setIsOpen(true);
     setUnseenChatId(unseen => (unseen === activeChatId ? null : unseen));
   }, [activeChatId]);
 
-  // Only hides the panel: the turns and any running stream are left alone.
+  /** Hides the panel. Chats and any answer still streaming are left alone. */
   const close = useCallback(() => setIsOpen(false), []);
 
-  // Hides the panel and holds `action` until the host reports the exit finished. With the panel
-  // already hidden there is nothing to wait for.
+  /**
+   * Hides the panel, then runs `action` once it has finished leaving the screen.
+   * If the panel is already hidden, `action` runs straight away.
+   */
   const closeThen = (action: () => void) => {
     if (!isOpen) {
       action();
@@ -133,28 +142,33 @@ function useAssistant(): IAssistant {
     setIsOpen(false);
   };
 
+  /** Called by `App` when the panel has left the screen: runs the waiting action, if any. */
   const onClosed = useCallback(() => {
     const action = afterClose.current;
     afterClose.current = null;
     action?.();
   }, []);
 
-  // Reopened before the exit could finish: that exit never reports, so the wait ends here.
+  // Reopened before it finished leaving: that exit never reports back, so stop waiting here.
   useEffect(() => {
     if (isOpen) onClosed();
   }, [isOpen, onClosed]);
 
-  // A fresh chat, opened on its empty state so the panel can ask how it can help. An active chat
-  // that has not been asked anything is that fresh chat already, so then only the panel opens. The
-  // chat joins the history once its first question is asked.
+  /**
+   * Starts a new chat and opens the panel on "How can I help?".
+   * If the active chat has no questions yet, it already is a new chat, so only the panel opens.
+   * A chat shows up in the history once its first question is asked.
+   */
   const newChat = () => {
     if (turns.length > 0) setActiveChatId(`chat-${++chatCount.current}`);
     setIsOpen(true);
     announce('New chat. How can I help?');
   };
 
-  // Back to an earlier chat, with the panel open on it. The dialog's title changes under a focused
-  // History button, so the live region says which chat this now is.
+  /**
+   * Opens an earlier chat in the panel. Screen readers hear which chat it is, because the
+   * panel's title changes while focus may be somewhere else.
+   */
   const switchChat = (chatId: string) => {
     setActiveChatId(chatId);
     setIsOpen(true);
@@ -163,15 +177,14 @@ function useAssistant(): IAssistant {
     if (title) announce(`Opened chat: ${title}`);
   };
 
-  // The "Answer ready" pill: shows the chat whose answer finished out of view, switching to it if
-  // the reader has moved on to another chat since.
+  /** For the "Answer ready" pill: opens the chat whose answer finished unseen. */
   const openUnseenAnswer = () => {
     if (!unseenChatId) return;
     if (unseenChatId === activeChatId) open();
     else switchChat(unseenChatId);
   };
 
-  // Newest pin goes on top, and the panel closes so the card can be seen settling on the dashboard.
+  /** Pins a turn's card to the top of the dashboard and closes the panel so the card is seen. */
   const pin = ({ id, prompt, card }: ITurn) => {
     if (!card || pinned.some(entry => entry.turnId === id)) return;
 
@@ -185,7 +198,10 @@ function useAssistant(): IAssistant {
     );
   };
 
-  // Each unpin keeps its own undo timer, so two quick unpins can both be undone from their own toasts.
+  /**
+   * Removes a pinned card and keeps it for `UNDO_WINDOW_MS` so it can be put back.
+   * Each unpin has its own timer, so two quick unpins can both be undone.
+   */
   const unpin = (turnId: string) => {
     const index = pinned.findIndex(entry => entry.turnId === turnId);
     if (index === -1) return;
@@ -197,12 +213,13 @@ function useAssistant(): IAssistant {
       timer: window.setTimeout(() => undoable.current.delete(turnId), UNDO_WINDOW_MS),
     });
     setPinned(current => current.filter(entry => entry.turnId !== turnId));
-    // Not announced here: the host's undo toast is a live region of its own and says it, with the
-    // time limit, so a second announcement would only repeat it.
+    // No announcement here: the undo toast already tells screen readers, time limit included.
   };
 
-  // Puts one unpinned card back where it was, if its undo window is still open. The updater reads
-  // the latest list, so a toast clicked after other changes never restores into a stale one.
+  /**
+   * Puts an unpinned card back in its old place, if its undo time has not run out.
+   * Works on the latest list, so a late Undo never restores into an old version of it.
+   */
   const undoUnpin = (turnId: string) => {
     const entry = undoable.current.get(turnId);
     if (!entry) return;
@@ -217,7 +234,7 @@ function useAssistant(): IAssistant {
     announce('Coaching card pinned to your dashboard again.');
   };
 
-  // Pending undo timers die with the host.
+  // Clear any undo timers still running when the app unmounts.
   useEffect(() => {
     const pending = undoable.current;
     return () => pending.forEach(entry => window.clearTimeout(entry.timer));

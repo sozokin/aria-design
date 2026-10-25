@@ -84,3 +84,4 @@ To support modularity and accessibility of the codebase and accommodate faster d
 - Taken **WCAG contract** standards into mind while designing.
 - **Focus management:** Keyboard focus shifts between the Panel and the chat and other toggles as required.
 - **Screen reader friendly**: ARIA roles on various key elements to curate the screen readers.
+- `prefers-reduced-motion`: Added support in the codebase, built into the motion layer.

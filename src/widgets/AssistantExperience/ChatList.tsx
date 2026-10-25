@@ -5,12 +5,20 @@ import { cn } from '@/lib/utils';
 import type { IChatSummary } from '@/types/assistant.types';
 import { IChatList } from './AssistantExperience.types';
 
+/**
+ * The second line under a chat's title, for example "2 questions · Marcus Bell".
+ *
+ * @param summary - The chat's question count and rep.
+ * @returns The subtitle text.
+ */
 const chatSubtitle = ({ turnCount, rep }: IChatSummary) =>
   `${turnCount === 1 ? '1 question' : `${turnCount} questions`}${rep ? ` · ${rep}` : ''}`;
 
 /**
- * Every chat so far, most recently asked first, each a button that switches to it; the active one
- * is highlighted. Shared by the history sheet and the expanded panel's left pane.
+ * The list of chats, newest first. Each chat is a button that opens it; the open chat is
+ * highlighted.
+ *
+ * Used in the Chat history sheet and in the expanded panel's left pane.
  */
 const ChatList: ReactFC<IChatList> = ({ chats, activeChatId, onSwitchChat }) => {
   if (chats.length === 0) {
@@ -36,8 +44,8 @@ const ChatList: ReactFC<IChatList> = ({ chats, activeChatId, onSwitchChat }) => 
                 isActive ? 'border-accent/30 bg-accent-muted' : 'border-border bg-secondary',
               )}
             >
-              {/* An answer still arriving in this chat: the accent dot, glowing the way the
-                  "Answer ready" pill does, so the chat can be found from the list. */}
+              {/* A glowing dot (like the "Answer ready" pill) marks a chat whose answer is
+                  still arriving, so it is easy to find in the list. */}
               {chat.isAnswering && (
                 <span className="relative flex size-1.5 shrink-0">
                   <span

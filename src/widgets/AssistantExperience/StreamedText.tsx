@@ -6,8 +6,8 @@ import { EASE_OUT } from '@/lib/motion';
 import { IStreamedText } from './AssistantExperience.types';
 
 /**
- * The answer text as it arrives. Each chunk is laid out first, so the paragraph takes its space at
- * once, and then fades in from transparent. A caret marks that more is coming.
+ * The answer text as it arrives. Each chunk takes its space straight away, then fades in, so
+ * lines never pop. A blinking caret shows that more text is coming.
  */
 const StreamedText: ReactFC<IStreamedText> = ({ deltas, streaming }) => (
   <p className="text-sm leading-relaxed">

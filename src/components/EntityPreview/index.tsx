@@ -10,12 +10,16 @@ import { createPortal } from 'react-dom';
 
 import { IEntityPreview, IPreviewPosition } from './EntityPreview.types';
 
+/** The smallest gap, in pixels, between the card and the edge of the screen. */
 const VIEWPORT_GUTTER = 16;
+/** The gap, in pixels, between the chip and the card. */
 const PREVIEW_GAP = 8;
 
 /**
- * A chip in the brief (a rep, a deal) that shows a small preview card on hover, focus or tap. The
- * card is portalled to the body and placed below the chip, or above it when there is no room.
+ * A chip in the brief (a rep or a deal) that shows a small preview card on hover, focus or tap.
+ *
+ * The card is placed at the end of the page body (a portal), below the chip, or above it when
+ * there is no room below. Escape or a click elsewhere closes it.
  */
 const EntityPreview: ReactFC<IEntityPreview> = ({ id, label, children }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,9 +27,10 @@ const EntityPreview: ReactFC<IEntityPreview> = ({ id, label, children }) => {
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const previewRef = useRef<HTMLSpanElement>(null);
-  // Leaving the chip closes the card after a short grace period, so the pointer can cross to it.
+  /** Leaving the chip closes the card after a short wait, so the pointer can move onto the card. */
   const closeTimerRef = useRef<number | null>(null);
 
+  /** Cancels a close that is waiting to happen. */
   const cancelClose = useCallback(() => {
     if (closeTimerRef.current !== null) {
       window.clearTimeout(closeTimerRef.current);
@@ -33,22 +38,26 @@ const EntityPreview: ReactFC<IEntityPreview> = ({ id, label, children }) => {
     }
   }, []);
 
+  /** Opens the card (it is measured and placed before it shows). */
   const openPreview = useCallback(() => {
     cancelClose();
     setPosition(current => ({ ...current, ready: false }));
     setIsOpen(true);
   }, [cancelClose]);
 
+  /** Closes the card straight away. */
   const closePreview = useCallback(() => {
     cancelClose();
     setIsOpen(false);
   }, [cancelClose]);
 
+  /** Closes the card after a short wait (cancelled if the pointer comes back). */
   const scheduleClose = useCallback(() => {
     cancelClose();
     closeTimerRef.current = window.setTimeout(() => setIsOpen(false), 100);
   }, [cancelClose]);
 
+  /** Places the card below the chip, or above it if there is no room below. */
   const updatePosition = useCallback(() => {
     const trigger = triggerRef.current;
     const preview = previewRef.current;
@@ -57,7 +66,7 @@ const EntityPreview: ReactFC<IEntityPreview> = ({ id, label, children }) => {
     const triggerRect = trigger.getBoundingClientRect();
     const previewRect = preview.getBoundingClientRect();
 
-    // Keep the card inside the viewport's gutters horizontally.
+    // Keep the card inside the screen, with a small gap on each side.
     const maxLeft = Math.max(
       VIEWPORT_GUTTER,
       window.innerWidth - previewRect.width - VIEWPORT_GUTTER,
@@ -73,7 +82,7 @@ const EntityPreview: ReactFC<IEntityPreview> = ({ id, label, children }) => {
     setPosition({ left, top, ready: true });
   }, []);
 
-  // Place the card as soon as it renders, and keep it placed while the page moves.
+  // Place the card as soon as it renders, and keep it in place while the page scrolls or resizes.
   useLayoutEffect(() => {
     if (!isOpen) return;
 
@@ -87,7 +96,7 @@ const EntityPreview: ReactFC<IEntityPreview> = ({ id, label, children }) => {
     };
   }, [isOpen, updatePosition]);
 
-  // A tap or click anywhere else closes it.
+  // A tap or click anywhere else closes the card.
   useEffect(() => {
     if (!isOpen) return;
 
@@ -102,6 +111,7 @@ const EntityPreview: ReactFC<IEntityPreview> = ({ id, label, children }) => {
     return () => document.removeEventListener('pointerdown', handleOutsidePointer);
   }, [closePreview, isOpen]);
 
+  // Cancel a waiting close when the chip unmounts.
   useEffect(() => () => cancelClose(), [cancelClose]);
 
   return (

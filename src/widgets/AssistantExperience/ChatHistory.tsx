@@ -15,11 +15,13 @@ import ChatList from './ChatList';
 import { IChatHistory } from './AssistantExperience.types';
 
 /**
- * The Chat history button and the sheet it opens: every chat so far, most recently asked first, in
- * a list that scrolls however many there are. On desktop the button sits in the right rail under
- * the date, with its label; on mobile it is in the dashboard menu. Choosing a chat closes the sheet
- * and switches the panel to it; once the sheet has closed, focus goes to that panel (the host's
- * onChoiceClosed) rather than back to the button. Closed without a choice, focus returns to the button.
+ * The "Chat history" button and the side sheet it opens, listing every chat (newest first).
+ *
+ * - Desktop: the button sits in the right rail, under the date, with its label.
+ * - Mobile: it sits in the dashboard menu.
+ *
+ * Picking a chat closes the sheet and opens that chat in the panel. Focus then goes to the panel
+ * (through `onChoiceClosed`). If the sheet is closed without a pick, focus goes back to the button.
  */
 const ChatHistory: ReactFC<IChatHistory> = ({
   chats,
@@ -29,10 +31,10 @@ const ChatHistory: ReactFC<IChatHistory> = ({
   withLabel,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  // A chat was chosen, so the close that follows hands focus on instead of restoring it.
+  /** True when a chat was picked, so closing hands focus to the panel instead of the button. */
   const hasChosen = useRef(false);
 
-  // Also for the chat that is already active: choosing it still brings the panel up on it.
+  /** Opens the picked chat, even if it is already the active one, and closes the sheet. */
   const choose = (chatId: string) => {
     hasChosen.current = true;
     setIsOpen(false);
@@ -43,7 +45,7 @@ const ChatHistory: ReactFC<IChatHistory> = ({
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         {withLabel ? (
-          // Negative margin: the label's right edge lines up with the date above, not the padding's.
+          // The negative margin lines the label's right edge up with the date above it.
           <Button type="button" variant="ghost" size="sm" className="-mr-2.5 text-text-secondary">
             <History data-icon="inline-start" aria-hidden="true" />
             Chat history
@@ -56,7 +58,7 @@ const ChatHistory: ReactFC<IChatHistory> = ({
       </SheetTrigger>
       <SheetContent
         side="right"
-        // The same data-[side] selector as the sheet's default width, so this one can override it.
+        // Uses the same data-[side] selector as the sheet's default width, so it can override it.
         className="scrollbar-stable overflow-y-auto data-[side=right]:w-[min(22rem,88vw)]"
         onCloseAutoFocus={event => {
           if (!hasChosen.current) return;

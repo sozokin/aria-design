@@ -1,8 +1,14 @@
 import { useSyncExternalStore } from 'react';
 
-/** The shell switches to its desktop layout at this width (styles.css: max-width: 760px). */
+/** Screens this wide or wider get the desktop layout (styles.css switches at 760px). */
 export const SHELL_DESKTOP_QUERY = '(min-width: 761px)';
 
+/**
+ * Tells whether a CSS media query matches, and updates when that changes.
+ *
+ * @param query - A media query, for example `SHELL_DESKTOP_QUERY`.
+ * @returns True while the query matches. Always false during server rendering.
+ */
 function useMediaQuery(query: string) {
   return useSyncExternalStore(
     onChange => {

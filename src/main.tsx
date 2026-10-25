@@ -9,7 +9,7 @@ import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {/* Honour the OS reduced-motion setting across every Motion animation. */}
+    {/* Every Motion animation follows the system's "reduce motion" setting. */}
     <MotionConfig reducedMotion="user">
       <TooltipProvider delayDuration={200}>
         <App />

@@ -23,67 +23,76 @@ import { cn } from '@/lib/utils';
 
 import { IAssistantPanel } from './AssistantExperience.types';
 
-// What Tab can land on inside the panel.
+/** Elements that the Tab key can land on. */
 const TABBABLE =
   'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/** The panel's controls in tab order: rendered, not inert, not taken out of the order. */
+/**
+ * Lists the panel's controls in Tab order, skipping hidden, inert and untabbable ones.
+ *
+ * @param root - The panel element.
+ * @returns The controls, first to last.
+ */
 const tabbablesIn = (root: HTMLElement) =>
   [...root.querySelectorAll<HTMLElement>(TABBABLE)].filter(
     element =>
       element.tabIndex >= 0 && !element.closest('[inert]') && element.getClientRects().length > 0,
   );
 
-// Rises a little and settles, so it reads as coming up from the prompt bar below it.
+/** Desktop entrance: rises a little and settles, as if coming up from the prompt bar. */
 const DESKTOP_ENTRANCE = {
   initial: { opacity: 0, y: 16, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
   exit: { opacity: 0, y: 8, scale: 0.98 },
 };
 
-// No scale on mobile: scaling a large shadowed surface re-rasterises every frame on iOS WebKit,
-// which is what made the entrance stutter.
+/**
+ * Mobile entrance: slides up without scaling. Scaling a large, shadowed surface redraws it on
+ * every frame on iPhones, which made the entrance stutter.
+ */
 const MOBILE_ENTRANCE = {
   initial: { opacity: 0, y: 28 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: 20 },
 };
 
-// Opening straight into the expanded form (it is remembered across a close): the box grows from
-// its own centre rather than rising from the bar.
+/** Entrance when opening straight into the expanded form: grows from its own centre. */
 const EXPANDED_ENTRANCE = {
   initial: { opacity: 0, scale: 0.96 },
   animate: { opacity: 1, scale: 1 },
   exit: { opacity: 0, scale: 0.98 },
 };
 
-// Changing form is a sequence, in seconds: the content clears, the box itself grows or shrinks to
-// its new geometry, the chat pane slides in from the left (expanding only), and the content
-// settles into the new box. Each step starts when the one before it has finished.
+/**
+ * Timings, in seconds, for switching between the normal and the expanded panel. Each step starts
+ * when the one before it ends:
+ * 1. `clear`: the content fades out.
+ * 2. `shell`: the empty box grows or shrinks to its new size.
+ * 3. `pane`: the chats pane slides in from the left (expanding only).
+ * 4. `content`: the content fades back in.
+ */
 const FORM_SWITCH = { clear: 0.1, shell: 0.4, pane: 0.25, content: 0.25 };
 
 /**
- * The answer surface. Non-modal on purpose: the prompt bar underneath stays usable for follow-ups,
- * so there is no focus trap. It takes focus when it opens (unless it was opened from the bar, which
- * keeps the caret while the reader types) and when the host asks (focusRequest). While open it sits
- * between the bar's field and send button in the tab order. Escape closes; the host returns focus to
- * the entry point. Before
- * anything is asked in a chat the panel asks how it can help and offers a first question.
- * Switching chats, from a history sheet or the expanded panel's pane, swaps the turns in place.
+ * The AI Assistant panel, where answers appear.
  *
- * Before anything is asked the panel is docked: it sits on the prompt bar at its natural height, so
- * "How can I help?" reads as part of the bar. Asking a question raises it. On desktop the raised
- * panel is anchored by its top edge, placed where the top would sit at full height, so arriving
- * content only ever extends it downward and what has already loaded never moves. On mobile the
- * sheet stays on the bar and grows upward to its cap. The move between the two is a layout
- * animation; the inner height animation carries the size.
+ * It is not modal: there is no focus trap, so the prompt bar below stays usable for follow-ups.
  *
- * Expanded (desktop only) the panel is centred on the screen at most of its size, over a backdrop,
- * with the chats as a left pane and the thread on the right. Changing form keeps the one box and
- * runs a sequence (FORM_SWITCH): the content clears while the box still has its old geometry, the
- * box animates to its new geometry as a layout animation (empty by then, so the scaling distorts
- * nothing), the pane slides in, then the content settles in. Collapsing runs it back without the
- * pane step.
+ * Focus:
+ * - It takes focus when it opens, except when it was opened by typing in the prompt bar (the
+ *   caret stays there).
+ * - `App` can also ask it to take focus while open (`focusRequest`).
+ * - While open, Tab goes field → panel → send button.
+ * - Escape closes it, and `App` puts focus back on the send button.
+ *
+ * Its forms:
+ * - Docked: before anything is asked, it sits on the prompt bar and asks "How can I help?".
+ * - Raised: once a question is asked. On desktop its top edge stays put and it grows downward,
+ *   so text already read never moves. On mobile it grows up from the bar to a maximum height.
+ * - Expanded (desktop only): centred, most of the screen, with chats on the left. Switching to
+ *   and from it follows the `FORM_SWITCH` steps.
+ *
+ * Switching chats (from the history sheet or the chats pane) swaps the answers in place.
  */
 const AssistantPanel: ReactFC<IAssistantPanel> = ({
   turns,
@@ -109,43 +118,50 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
   const titleId = useId();
   const rootRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  // The scroll area and its content remount when the form changes, so the measuring hooks take the
-  // elements themselves and are handed each new one. The scroll area also stays in a ref, for the
-  // scrolling below.
+  /**
+   * The scroll area and its content are rebuilt when the form changes, so the measuring hooks are
+   * given the elements themselves (and each new one). The scroll area is also kept in a ref for
+   * scrolling.
+   */
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const [contentElement, setContentElement] = useState<HTMLDivElement | null>(null);
+  /** Callback ref for the scroll area: stores it in both places above. */
   const setScrollArea = useCallback((node: HTMLDivElement | null) => {
     scrollRef.current = node;
     setScrollElement(node);
   }, []);
-  // Set on mount when a scroll position was resumed, so the "new turn" scroll below skips once.
+  /** True when the panel opened at a remembered scroll spot, so the "new answer" scroll skips once. */
   const resumedScroll = useRef(false);
 
   const reduceMotion = useReducedMotion();
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
   const entrance = isExpanded ? EXPANDED_ENTRANCE : isDesktop ? DESKTOP_ENTRANCE : MOBILE_ENTRANCE;
 
-  // The form the box is in. It follows `isExpanded` once the content has cleared, so the box moves
-  // empty; until then the two differ and the content is on its way out.
+  /**
+   * The form the box is drawn in. It catches up with `isExpanded` only after the content has faded
+   * out, so the box changes size while empty.
+   */
   const [shownExpanded, setShownExpanded] = useState(isExpanded);
+  /** True while the old content is fading out before a form change. */
   const isClearing = shownExpanded !== isExpanded;
-  // True from the start of the sequence until the box has arrived: the box animates its whole
-  // layout, size included, instead of its position alone.
+  /** True during a form change: the box then animates its size, not only its position. */
   const [isChangingForm, setIsChangingForm] = useState(false);
-  // The Expand/Collapse button that was pressed leaves with the old content; focus moves to its
-  // counterpart when the new content mounts. A stable callback ref, so it runs on mount only and
-  // not again for the old button on every re-render before it leaves.
+  /**
+   * The Expand / Shrink button that was pressed disappears with the old content. When the new
+   * content appears, focus moves to the new button. A stable callback ref, so it only runs when
+   * the button first mounts.
+   */
   const focusToggleOnMount = useRef(false);
   const focusToggle = useCallback((node: HTMLButtonElement | null) => {
     if (!node || !focusToggleOnMount.current) return;
     focusToggleOnMount.current = false;
     node.focus({ preventScroll: true });
   }, []);
-  // Under reduced motion the sequence collapses to plain fades with no waiting.
+  /** A step's delay in seconds, or 0 when the reader prefers reduced motion (plain fades only). */
   const step = (seconds: number) => (reduceMotion ? 0 : seconds);
 
   useEffect(() => {
-    // Toggled back before the box moved: nothing left to do.
+    // Switched back before the box moved: nothing to do.
     if (shownExpanded === isExpanded) {
       setIsChangingForm(false);
       return;
@@ -166,27 +182,29 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
       window.clearTimeout(move);
       window.clearTimeout(settle);
     };
-    // Runs for a change of `isExpanded` only; `shownExpanded` catching up must not restart it.
+    // Only `isExpanded` restarts this. `shownExpanded` catching up must not.
   }, [isExpanded]);
   const contentHeight = useElementHeight(contentElement);
   const hasMoreBelow = useHasMoreBelow(scrollElement, contentHeight);
-  // The bottom fade and the height animation wait until the entrance has finished, so they never
-  // compete with it.
+  /** True once the entrance has finished. The bottom fade and height animation wait for it. */
   const [hasEntered, setHasEntered] = useState(false);
 
   const thread = turns[0];
+  /** Docked = nothing asked in this chat yet. */
   const isDocked = thread === undefined;
 
-  // Take focus so screen readers announce the dialog; Tab then reaches its controls. Not when the
-  // panel was opened by focusing the prompt: focus stays there and the panel is a companion.
+  // Take focus on open, so screen readers announce the panel and Tab reaches its controls.
+  // Skipped when it was opened by typing in the prompt bar: the caret stays there.
   useEffect(() => {
     if (takeFocus) rootRef.current?.focus({ preventScroll: true });
-    // Mount only: later prop changes must not refocus or rescroll an open panel.
+    // On mount only: later prop changes must not move focus or scroll an open panel.
   }, []);
 
-  // The host asks the open panel to take focus: its content was replaced (a new chat, or an asked
-  // chip that unmounted), or a sheet that held focus has closed. Not while focus is already inside,
-  // so the control the reader is on keeps it. The request the panel mounted with is takeFocus's.
+  /**
+   * The last focus request already handled. `App` raises `focusRequest` when the panel's content
+   * was replaced (a new chat, or a chip that disappeared) or when a sheet that held focus closed.
+   * The panel then takes focus, unless focus is already inside it.
+   */
   const handledFocusRequest = useRef(focusRequest);
   useEffect(() => {
     if (focusRequest === handledFocusRequest.current) return;
@@ -197,11 +215,10 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Already handled means a sheet took it (radix listens in the capture phase): that sheet
-      // closes and the panel stays.
+      // If something else already handled Escape (an open sheet), let that sheet close instead.
       if (event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault();
-        // Like the close button: the panel closes in whichever form it is in, and reopens in it.
+        // Same as the close button: closes in whatever form, and reopens in that form.
         onDismiss();
       }
     };
@@ -209,11 +226,18 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onDismiss]);
 
-  // While the panel is open it sits between the bar's field and its send button in the tab order,
-  // however it was opened: Tab from the field enters the panel, Tab past the panel's last control
-  // lands on the send button, and from there the page's own order carries on. Shift+Tab runs it
-  // back. The panel renders before the bar, so left alone Tab would skip it from the field. Not
-  // while the panel is leaving, and not when anything else (a sheet) has handled the key.
+  /**
+   * Whether the panel is still on screen (false while its closing animation plays).
+   *
+   * While on screen, the panel fits itself into the Tab order between the prompt field and the
+   * send button, however it was opened:
+   * - Tab from the field goes to the panel's first control.
+   * - Tab from the panel's last control goes to the send button, then on through the page.
+   * - Shift+Tab does the same in reverse.
+   *
+   * This is needed because the panel comes before the prompt bar on the page, so Tab would
+   * otherwise skip it. It does nothing if something else (a sheet) has handled the key.
+   */
   const isPresent = useIsPresent();
   useEffect(() => {
     if (!isPresent) return;
@@ -229,6 +253,7 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
       const controls = tabbablesIn(root);
       const first = controls[0] ?? root;
       const last = controls[controls.length - 1] ?? root;
+      /** Moves focus to `target` instead of where Tab would have gone. */
       const move = (target: HTMLElement) => {
         event.preventDefault();
         target.focus();
@@ -245,17 +270,16 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
     return () => document.removeEventListener('keydown', handleTab);
   }, [isPresent, entryPoint]);
 
-  // Reopening resumes where the reader left off, if they had scrolled. Before paint, so the panel
-  // never flashes at the top first.
+  // Reopen at the remembered scroll spot. Done before paint, so the panel never flashes at the top.
   useLayoutEffect(() => {
     if (initialScrollTop && scrollRef.current) {
       scrollRef.current.scrollTop = initialScrollTop;
       resumedScroll.current = true;
     }
-    // Mount only: later prop changes must not refocus or rescroll an open panel.
+    // On mount only: later prop changes must not move focus or scroll an open panel.
   }, []);
 
-  // A new follow-up scrolls into view at the top of the panel, like a fresh page.
+  // A new follow-up scrolls to the top of the panel, like a fresh page.
   useEffect(() => {
     const resumed = resumedScroll.current;
     resumedScroll.current = false;
@@ -275,38 +299,35 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
       aria-modal="false"
       aria-labelledby={titleId}
       tabIndex={-1}
-      // In the usual form the box takes the dashboard column's width. The radius is a style, not a
-      // class, so the layout animation can keep the corners round while it scales the box.
+      // Normally the panel takes the dashboard column's width. The corner radius is set here (not as
+      // a class) so corners stay round while Motion resizes the box.
       style={{
         borderRadius: 16,
         ...(!shownExpanded && anchor ? { left: anchor.left, width: anchor.width } : {}),
       }}
       className={cn(
-        // Focus on the panel itself (opened from the keyboard) gets the ring every control has.
+        // When the panel itself has keyboard focus, it shows the same ring as any control.
         'fixed z-(--z-assistant) flex overflow-hidden border border-border bg-popover text-popover-foreground will-change-transform outline-none focus-visible:ring-3 focus-visible:ring-ring/50 shell:shadow-lg',
         shownExpanded
-          ? // From near the top down to 1rem above the bar; 80% of the viewport's width, but never
-            // narrower than 56rem (nearly the whole width on a small desktop). The backdrop covers
-            // the sidebar too, so the box is centred on the whole screen, with auto margins rather
-            // than a transform: the layout animation measures the box without transforms, and a
-            // translate would send it towards the wrong place first. Percentages, not vw: for a
-            // fixed box they exclude the scrollbar, so the centre is the visible centre.
-            // The bottom follows the bar's height with a transition: the top is fixed, so Motion's
-            // position-only layout sees no move and leaves this to CSS.
+          ? // Expanded: from near the top to 1rem above the bar, 80% of the screen wide (at least
+            // 56rem, or nearly full width on a small desktop). Centred on the whole screen with auto
+            // margins, not with a transform: Motion's size animation would then head the wrong way.
+            // Uses % (not vw), which leaves out the scrollbar, so the centre is the visible centre.
+            // The bottom follows the bar's height with a CSS transition, since the top never moves.
             'inset-x-0 top-[5dvh] bottom-[calc(var(--prompt-bar-h)+2.5rem)] mx-auto w-[min(calc(100%_-_2rem),max(80%,56rem))] flex-row transition-[bottom] duration-(--duration-base) ease-(--ease-out)'
           : cn(
               'inset-x-3 max-h-[calc(100dvh-var(--prompt-bar-h)-4rem-env(safe-area-inset-bottom,0px))] flex-col shadow-md shell:inset-x-auto shell:max-h-(--assistant-panel-max)',
-              // Docked: on the bar, 1rem above it. Raised: the top edge is pinned where it sits at
-              // full height, so the box grows downward as the answer arrives and what has already
-              // been read stays put; hung from the bar instead, every chunk would push it up.
+              // Docked: sits 1rem above the bar. Raised: the top edge stays where it would be at full
+              // height, so the panel grows downward and text already read stays still. (Hanging
+              // from the bar instead, every new chunk would push everything up.)
               isDocked
                 ? 'bottom-[calc(var(--prompt-bar-h)+2rem+env(safe-area-inset-bottom,0px))] shell:bottom-[calc(var(--prompt-bar-h)+2.5rem)]'
                 : 'top-8 shell:top-[calc(100dvh-var(--prompt-bar-h)-2.5rem-var(--assistant-panel-max))]',
             ),
       )}
-      // Position only, usually: the move from docked to raised glides, while the size is left to the
-      // inner height animation so nothing inside is stretched on the way. Changing form animates
-      // the whole box, size included; the content has cleared out of it by the time it moves.
+      // Usually only the position animates (docked to raised), while the inner area animates the
+      // height, so nothing inside is stretched. During a form change the whole box animates,
+      // size included; its content has already faded out by then.
       layout={isChangingForm ? true : 'position'}
       initial={entrance.initial}
       animate={entrance.animate}
@@ -318,7 +339,7 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
       }}
       onAnimationComplete={() => setHasEntered(true)}
     >
-      {/* Mounted as the box starts to grow, the pane waits for it to arrive, then slides in. */}
+      {/* The chats pane: added as the box starts to grow, it waits for the box, then slides in. */}
       <AnimatePresence initial={false}>
         {shownExpanded && (
           <motion.aside
@@ -348,10 +369,9 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
         )}
       </AnimatePresence>
 
-      {/* Keyed on the box's form. The old content fades while the box is still in place, is gone by
-          the time the box moves, and the new content settles in once the box (and, expanding, the
-          pane) has arrived. min-h-0: a flex child defaults to its content's height, which would push
-          the scroll area past the panel's max height instead of letting it shrink and scroll. */}
+      {/* The content, keyed by form: the old content fades out before the box moves, and the new
+          content fades in once the box (and the chats pane) has arrived. `min-h-0` lets the scroll
+          area shrink and scroll, instead of pushing the panel past its maximum height. */}
       <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={shownExpanded ? 'wide' : 'narrow'}
@@ -383,7 +403,7 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
               </h2>
             </div>
             <div className="flex shrink-0 gap-0.5">
-              {/* Desktop only: mobile already has the whole screen. */}
+              {/* Desktop only: on mobile the panel already fills the screen. */}
               {isDesktop && (
                 <Button
                   ref={focusToggle}
@@ -412,15 +432,15 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
             </div>
           </header>
 
-          {/* Animates to the content's height, so new content grows the panel smoothly (downward only,
-            since the top edge is fixed). Capped by the panel's max height, beyond which it scrolls.
-            Expanded, the box is fixed and the area simply fills it. */}
+          {/* The scroll area. It animates to the content's height, so new content grows the panel
+            smoothly (downward, since the top stays put). Past the maximum height it scrolls.
+            When expanded, it simply fills the box. */}
           <motion.div
             ref={setScrollArea}
             onScroll={event => onScrollChange(event.currentTarget.scrollTop)}
             data-overflow={hasEntered && hasMoreBelow}
-            // Relative so it is the turns' offsetParent: their offsetTop is then measured from the
-            // scroll area, not from the dialog with its header.
+            // `relative`, so each answer's offsetTop is measured from the scroll area, not from
+            // the whole panel with its header.
             className={cn(
               'relative min-h-0 shrink scrollbar-stable overflow-y-auto overscroll-contain data-[overflow=true]:scroll-fade',
               shownExpanded && 'flex-1',
@@ -431,13 +451,13 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
           >
             <div
               ref={setContentElement}
-              // A reading width in the wide box, so lines do not run the whole way across.
+              // In the wide box, keep lines to a comfortable reading width.
               className={cn(
                 'flex flex-col gap-5 px-5 py-4',
                 shownExpanded && 'mx-auto w-full max-w-2xl',
               )}
             >
-              {/* The empty state: nothing asked in this chat yet, so offer a question to start with. */}
+              {/* Empty state: nothing asked in this chat yet, so suggest a first question. */}
               {turns.length === 0 && (
                 <div>
                   <p className="text-sm text-text-secondary">

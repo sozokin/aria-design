@@ -9,47 +9,65 @@ import { LOAD_IN } from '@/lib/motion';
 
 import { IPromptBar } from './PromptBar.types';
 
-// The new-chat pill and the gap to it: 3.25rem + 0.75rem (styles.css, .new-chat-trigger). While
-// the pill is out, the desktop bar gives up this much width, so the bar and the pill stay centred
-// as a pair.
+/**
+ * Width of the new-chat pill plus the gap to it, in pixels (3.25rem + 0.75rem). While the pill is
+ * showing, the desktop bar gives up this much width, so the bar and pill stay centred together.
+ */
 const NEW_CHAT_FOOTPRINT_PX = 64;
-// How long the bar and the pill take to glide into their places (styles.css, --duration-slow).
+/** How long the bar and the pill take to glide into place, in milliseconds. */
 const GLIDE_MS = 320;
-// On mobile the pill's retreat waits for the keyboard: once the visual viewport has stopped
-// changing for this long it has arrived, and if it never changes (a hardware keyboard, say) the
-// retreat goes ahead after the fallback.
+/**
+ * Mobile only: the pill waits for the on-screen keyboard to finish opening before it hides.
+ * The keyboard counts as settled when the screen size has not changed for `KEYBOARD_SETTLE_MS`.
+ * If the screen never changes (for example with a hardware keyboard), the pill hides after
+ * `KEYBOARD_FALLBACK_MS`.
+ */
 const KEYBOARD_SETTLE_MS = 120;
 const KEYBOARD_FALLBACK_MS = 700;
 
-// The field shows up to this many lines, growing a line at a time; longer questions scroll inside.
+/** The field grows to at most this many lines. Longer questions scroll inside it. */
 const MAX_LINES = 3;
-// One line of the field, and the field's vertical padding at one line and at more, in rem
-// (styles.css, .assistant-field). A taller pill gives its first and last lines more room.
+/** One line of the field, in rem. */
 const LINE_REM = 1.5;
+/** The field's top plus bottom padding, in rem, for one line and for more (more lines get more room). */
 const PADDING_REM = { oneLine: 1.625, multiline: 2.25 };
 
-// What the send button will do, which its arrow points at: up to open the panel, at the text to
-// ask it, down to close the panel.
+/**
+ * The send button's label for each thing it can do. Its arrow points the same way: up to open the
+ * panel, at the text to ask, down to close the panel.
+ */
 const SEND_LABEL = {
   open: 'Open AI Assistant',
   ask: 'Ask AI Assistant',
   close: 'Close AI Assistant',
 };
 
-/** The bar's height for a number of shown lines: the lines, the field's padding and the bar's borders. One line is the shell's 3.25rem. */
+/**
+ * The bar's height for a given number of lines: the lines, the padding and the borders.
+ *
+ * @param lines - How many lines the field shows.
+ * @returns A CSS height in rem. One line gives the starter app's 3.25rem.
+ */
 export const promptBarHeight = (lines: number) =>
   `${lines * LINE_REM + (lines > 1 ? PADDING_REM.multiline : PADDING_REM.oneLine) + 0.125}rem`;
 
 /**
- * The shell's AI Assistant entry point: the floating bar at the bottom centre of every page, with
- * the new-chat button beside it in a pill of its own that matches the bar. The field is one line
- * until the question needs more: it then grows to three lines, and beyond that scrolls, keeping the
- * line being typed at the bottom while the lines above fade out at the top. The send button does
- * what its arrow shows: with text it asks (arrow at the text), with an empty bar it opens the panel
- * (up) or closes it (down). On desktop Enter does the same and Shift+Enter starts a line; on mobile
- * Enter only starts a line. The new-chat pill waits behind the bar's right end until the chat has a
- * question in it, then the bar makes room and the pill glides out beside it: a first question is a
- * new chat already, so the pill matters only once there is a chat to leave.
+ * The AI Assistant's entry point: a bar floating at the bottom centre of every page, with a
+ * matching round + button beside it for a new chat.
+ *
+ * The field:
+ * - starts at one line and grows to three; after that it scrolls, keeping the line being typed in
+ *   view and fading out the lines above.
+ *
+ * The send button does what its arrow shows:
+ * - with text: asks the question (arrow points at the text),
+ * - with an empty bar: opens the panel (arrow up) or closes it (arrow down).
+ *
+ * Keyboard: on desktop, Enter asks and Shift+Enter adds a line. On mobile, Enter only adds a line.
+ *
+ * The + button hides behind the bar's right end until the chat has a question. Then the bar makes
+ * room and the + glides out next to it. (A first question already starts a new chat, so the +
+ * only matters once there is a chat to leave.)
  */
 const PromptBar: ReactFC<IPromptBar> = ({
   ref,
@@ -68,15 +86,17 @@ const PromptBar: ReactFC<IPromptBar> = ({
   onLinesChange,
 }) => {
   const isDesktop = useMediaQuery(SHELL_DESKTOP_QUERY);
-  // The pill is out while the active chat has a question; otherwise it is behind the bar. Its state
-  // lags `hasThread` on mobile when a new chat starts: the bar takes focus and the keyboard rises,
-  // and the pill's retreat (with the bar widening into its room) waits until the keyboard has
-  // arrived, so the two moves do not happen on top of each other.
+  /**
+   * Whether the + button is showing (it shows while the chat has a question). On mobile, when a
+   * new chat starts, hiding it waits for the keyboard to finish opening, so the two movements do
+   * not happen at the same time.
+   */
   const [showsNewChat, setShowsNewChat] = useState(hasThread);
-  // Positions also follow the column (resizes, the sidebar gliding), which must not be eased, so
-  // the transitions are switched on only for the pill's own coming and going: set in the same
-  // update as the new positions (anything measuring layout in between would otherwise see the
-  // move with transitions still off), and switched off once the glide is over.
+  /**
+   * True only while the + button is coming or going. The bar's position also follows the column
+   * (resizes, the sidebar sliding), which must not be animated, so the glide transition is only
+   * switched on for this moment, then off again.
+   */
   const [isGliding, setIsGliding] = useState(false);
   useEffect(() => {
     if (!isGliding) return;
@@ -112,9 +132,11 @@ const PromptBar: ReactFC<IPromptBar> = ({
     };
   }, [hasThread, isDesktop, showsNewChat]);
   const footprint = showsNewChat ? NEW_CHAT_FOOTPRINT_PX : 0;
-  // On desktop, centre the bar (and, when out, the pill with it) on the dashboard column rather
-  // than the whole main area. The bar is positioned by its centre (CSS translates it back by
-  // half), the pill by its left edge: beside the bar when out, under its right end when hidden.
+  /**
+   * Desktop: centre the bar (and the + button with it) on the dashboard column, not the whole
+   * screen. The bar is placed by its centre (CSS shifts it back by half its width). The + button
+   * is placed by its left edge: beside the bar when showing, under the bar's right end when hidden.
+   */
   const barCenter = anchor ? anchor.left + (anchor.width - footprint) / 2 : null;
   const barWidth = anchor ? `min(var(--assistant-w), ${anchor.width - footprint}px)` : null;
   const pillLeft =
@@ -122,21 +144,24 @@ const PromptBar: ReactFC<IPromptBar> = ({
       ? `calc(${barCenter}px + ${barWidth} / 2 ${showsNewChat ? '+ 0.75rem' : '- 3.25rem'})`
       : undefined;
 
+  /** What the send button will do now. */
   const intent = value.trim() ? 'ask' : isPanelOpen ? 'close' : 'open';
   const [mirror, setMirror] = useState<HTMLDivElement | null>(null);
   const lines = useTextLines(mirror, value);
   const shownLines = Math.min(lines, MAX_LINES);
   const overflows = lines > MAX_LINES;
-  // Whether text sits above or below the scrolled view, to fade the edge it continues past.
+  /** Whether there is hidden text above or below, so that edge can fade out. */
   const [edges, setEdges] = useState({ above: false, below: false });
+  /** Checks the field's scroll position and updates `edges`. */
   const syncEdges = (element: HTMLTextAreaElement) =>
     setEdges({
       above: element.scrollTop > 2,
       below: element.scrollHeight - element.scrollTop - element.clientHeight > 2,
     });
 
-  // The field, for the host (focus) and for the scrolling below.
+  /** The field element, kept for scrolling and passed on to `App` through `ref`. */
   const [field, setField] = useState<HTMLTextAreaElement | null>(null);
+  /** Callback ref: stores the field and passes it on to `ref`. */
   const setFieldRef = (node: HTMLTextAreaElement | null) => {
     setField(node);
     if (typeof ref === 'function') ref(node);
@@ -147,9 +172,9 @@ const PromptBar: ReactFC<IPromptBar> = ({
     onLinesChange(shownLines);
   }, [shownLines, onLinesChange]);
 
-  // Typing at the end, keep the view at the very bottom: the browser alone scrolls only as far as
-  // the caret. Editing higher up is left to the browser. Either way the edges are re-read, since
-  // the text has changed under them.
+  // When typing at the end, keep the field scrolled to the very bottom (the browser alone only
+  // scrolls as far as the caret). Editing higher up is left to the browser. Either way, re-check
+  // the faded edges, since the text has changed.
   useLayoutEffect(() => {
     if (!field) return;
     if (overflows && field.selectionEnd === field.value.length) {
@@ -166,7 +191,7 @@ const PromptBar: ReactFC<IPromptBar> = ({
         data-with-plus={showsNewChat}
         data-gliding={isGliding}
         style={{
-          // First paint: the bar rises last (styles.css, bar-rise).
+          // On first load the bar rises in last (see `bar-rise` in styles.css).
           animationDelay: `${LOAD_IN.hero}s`,
           animationDuration: `${LOAD_IN.duration}s`,
           ...(barCenter !== null ? { left: barCenter, width: barWidth ?? undefined } : {}),
@@ -184,8 +209,8 @@ const PromptBar: ReactFC<IPromptBar> = ({
           hasUnseenAnswer={hasUnseenAnswer}
           onReopen={onReopen}
         />
-        {/* The padding is on this wrapper, not the field: the field is the scroll viewport, so its
-            text is clipped at the padded edge and never runs to the pill's curve while scrolling. */}
+        {/* The padding is on this wrapper, not on the field. The field is what scrolls, so its text
+            is cut off at the padding and never runs into the bar's round ends. */}
         <div className="assistant-field" data-multiline={shownLines > 1}>
           <textarea
             ref={setFieldRef}
@@ -194,7 +219,7 @@ const PromptBar: ReactFC<IPromptBar> = ({
             value={value}
             placeholder={hasThread ? 'Ask a follow-up…' : 'Ask anything…'}
             autoComplete="off"
-            // Set here rather than measured from the content, so the change is a CSS transition.
+            // The height is set here (not grown from the content), so CSS can animate the change.
             style={{ height: `${shownLines * LINE_REM}rem` }}
             data-overflow={overflows}
             data-above={overflows && edges.above}
@@ -207,8 +232,8 @@ const PromptBar: ReactFC<IPromptBar> = ({
             onClick={onInteract}
             onScroll={event => syncEdges(event.currentTarget)}
             onKeyDown={event => {
-              // Desktop only: Enter asks, Shift+Enter starts a new line. A composing IME keeps
-              // Enter for itself. On mobile Enter is a new line and the send button asks.
+              // Desktop only: Enter asks, Shift+Enter adds a line. While typing with an input
+              // method (for example Japanese), Enter belongs to it. On mobile, the send button asks.
               if (
                 isDesktop &&
                 event.key === 'Enter' &&
@@ -220,8 +245,8 @@ const PromptBar: ReactFC<IPromptBar> = ({
               }
             }}
           />
-          {/* The same text, hidden, to measure how many lines it wraps to. The zero-width space
-              gives a trailing newline a line of its own, as it has in the field. */}
+          {/* A hidden copy of the text, used to count how many lines it wraps to. The zero-width
+              space at the end gives a trailing new line its own line, as in the field. */}
           <div ref={setMirror} className="assistant-mirror" aria-hidden="true">
             {`${value}\u200b`}
           </div>
@@ -245,8 +270,8 @@ const PromptBar: ReactFC<IPromptBar> = ({
         </button>
       </form>
 
-      {/* The same pill as the bar, so the plus reads as the send button's twin rather than a loose
-          dot. Inert while hidden behind the bar, so it is neither focusable nor announced. */}
+      {/* The + button, in a round pill that matches the bar, so it reads as the send button's
+          twin. While hidden behind the bar it is inert: it cannot be focused or heard. */}
       <div
         className="new-chat-trigger"
         data-shown={showsNewChat}

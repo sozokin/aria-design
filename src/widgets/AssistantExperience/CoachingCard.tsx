@@ -15,16 +15,20 @@ import { cn, getInitials } from '@/lib/utils';
 import { ICoachingCard } from './AssistantExperience.types';
 
 /**
- * The card's unfold, in seconds: one part (a rating band, then the footer) starts opening every
- * `step`, each taking `duration` to reach its height; within a band the rows follow from `row`
- * after it starts, one every `rowStep`.
+ * Timings, in seconds, for how the card opens the first time it shows:
+ * - `step`: gap between parts starting to open (each score group, then the footer).
+ * - `duration`: how long each part takes to open.
+ * - `row`: delay before a group's first row appears, after the group starts.
+ * - `rowStep`: gap between rows in the same group.
  */
 const UNFOLD = { step: 0.22, duration: 0.4, row: 0.12, rowStep: 0.07 };
 
 /**
- * The structured answer: who it is about, a summary, the scored skills grouped by rating band, and
- * one suggested next step. The same component renders inside the panel and, once pinned, on the
- * dashboard; the shared `layoutId` is what lets Motion fly it between the two.
+ * The structured answer: who it is about, a summary, the scored skills grouped by how well they
+ * went, and one suggested next step.
+ *
+ * The same card is used in the panel and, once pinned, on the dashboard. A shared `layoutId` lets
+ * Motion fly it from one place to the other.
  */
 const CoachingCard: ReactFC<ICoachingCard> = ({
   card,
@@ -39,15 +43,21 @@ const CoachingCard: ReactFC<ICoachingCard> = ({
   const reduceMotion = useReducedMotion();
   const groups = groupByBand(card.rows);
   const lowest = lowestRow(card.rows);
-  // Reduced motion keeps the stagger of the rows' fades but opens every part at once.
+  /** Open in steps, unless the reader prefers reduced motion (then every part opens at once). */
   const unfoldsInSteps = unfold && !reduceMotion;
-  // True until the last part has opened. The parts change the box's height every frame while
-  // they open, and the box re-renders along with the panel as they do, so a size animation on
-  // the box would fight them; once they are open, the box animates its size again, which is
-  // what carries it to the dashboard on a pin.
+  /**
+   * True until the last part has opened. While parts open, the card's height changes every frame,
+   * so it only animates its position. Afterwards it animates its full size again, which is what
+   * carries it to the dashboard when pinned.
+   */
   const [isUnfolding, setIsUnfolding] = useState(unfoldsInSteps);
 
-  // One part of the card opening from nothing to its height, in its turn.
+  /**
+   * Motion props that open one part of the card from zero height, in its turn.
+   *
+   * @param order - The part's place in the opening order (0 is first).
+   * @returns Motion props, or none when the card does not open in steps.
+   */
   const opening = (order: number) =>
     unfoldsInSteps
       ? {
@@ -81,7 +91,7 @@ const CoachingCard: ReactFC<ICoachingCard> = ({
           </h3>
           <p className="mt-0.5 text-xs text-text-secondary">
             {card.period}
-            {/* Beside the period on desktop. The mobile header is too narrow for one line, so it drops below, in brackets. */}
+            {/* Desktop: "· Scores out of 5" on the same line. Mobile: too narrow, so it goes on its own line, in brackets. */}
             <span className="block shell:inline">
               <span className="shell:hidden">(</span>
               <span className="hidden shell:inline">{' · '}</span>
@@ -102,7 +112,7 @@ const CoachingCard: ReactFC<ICoachingCard> = ({
           ) : (
             <>
               Pin
-              {/* The full label only fits beside the name on desktop; screen readers always get it. */}
+              {/* "to dashboard" only fits on desktop; screen readers always hear it. */}
               <span className="sr-only shell:not-sr-only"> to dashboard</span>
             </>
           )}

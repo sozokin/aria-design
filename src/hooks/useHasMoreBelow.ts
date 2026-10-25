@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 
 /**
- * True while a scroll region has content below the fold. Takes the element itself (from a callback
- * ref), so a region that remounts is watched afresh. `contentHeight` is only a dependency:
- * re-checking when the content grows, not just when the user scrolls.
+ * Tells whether a scroll area has more content further down.
+ *
+ * Takes the element itself (from a callback ref), so a replaced element is watched afresh.
+ *
+ * @param element - The scroll area, or `null` before it exists.
+ * @param contentHeight - The content's height. Not read; passing it re-checks when content grows,
+ *   not only when the reader scrolls.
+ * @returns True while there is content below the visible part.
  */
 function useHasMoreBelow(element: HTMLElement | null, contentHeight: number | null) {
   const [hasMore, setHasMore] = useState(false);
@@ -11,6 +16,7 @@ function useHasMoreBelow(element: HTMLElement | null, contentHeight: number | nu
   useEffect(() => {
     if (!element) return;
 
+    /** Checks whether more than 4 px of content is hidden below. */
     const check = () => {
       const remaining = element.scrollHeight - element.scrollTop - element.clientHeight;
       setHasMore(remaining > 4);

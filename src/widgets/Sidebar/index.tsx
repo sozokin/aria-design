@@ -12,18 +12,22 @@ import { PRIMARY_NAV, SECONDARY_NAV } from './nav';
 import { ISidebar } from './Sidebar.types';
 
 /**
- * The shell's primary navigation. On desktop it is the left column, with a compact mode that keeps
- * only the icons. On mobile the same element becomes the sticky top bar, and the avatar opens the
- * navigation as a dropdown beneath it.
+ * The app's main navigation.
+ *
+ * - Desktop: the left column. It can be compacted to show icons only.
+ * - Mobile: the same element becomes a sticky top bar that stays put while scrolling. The avatar
+ *   opens the navigation as a menu that drops down below it.
  */
 const Sidebar: ReactFC<ISidebar> = ({ isCompact, onCompactChange, isDesktop }) => {
   const searchRef = useRef<HTMLInputElement>(null);
   const avatarButtonRef = useRef<HTMLButtonElement>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  /** Expands a compact sidebar (used by the Cmd+K shortcut, so the search field is visible). */
   const expandSidebar = useCallback(() => onCompactChange(false), [onCompactChange]);
   useSearchShortcut(searchRef, isDesktop, expandSidebar);
 
+  /** Closes the mobile menu and puts focus back on the avatar that opened it. */
   const closeMobileNav = () => {
     setMobileNavOpen(false);
     // Focus goes back to the avatar that opened the menu.
@@ -32,7 +36,7 @@ const Sidebar: ReactFC<ISidebar> = ({ isCompact, onCompactChange, isDesktop }) =
 
   return (
     <>
-      {/* First paint: slides in from the left on desktop; on mobile the top bar settles from above. */}
+      {/* On first load: slides in from the left on desktop, or drops in from above on mobile. */}
       <motion.aside
         className="sidebar"
         aria-label="Primary"
@@ -118,7 +122,7 @@ const Sidebar: ReactFC<ISidebar> = ({ isCompact, onCompactChange, isDesktop }) =
         {!isDesktop && <MobileNav open={mobileNavOpen} onClose={closeMobileNav} />}
       </motion.aside>
 
-      {/* Dims the page while the mobile navigation is open; tapping it closes the menu. */}
+      {/* Dims the page while the mobile menu is open. Tapping it closes the menu. */}
       <AnimatePresence>
         {!isDesktop && mobileNavOpen && (
           <motion.div

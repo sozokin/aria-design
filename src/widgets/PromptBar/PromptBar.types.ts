@@ -2,32 +2,38 @@ import type { Ref } from 'react';
 
 import type { IColumnAnchor } from '@/types/layout.types';
 
+/** Props for `PromptBarStatus`. */
 export interface IPromptBarStatus {
-  /** An answer is arriving where the reader is not looking. */
+  /** True while an answer is arriving somewhere the reader is not looking. */
   isAnswering: boolean;
-  /** An answer finished out of view and has not been looked at. */
+  /** True when an answer finished out of sight and has not been opened yet. */
   hasUnseenAnswer: boolean;
-  /** Shows that answer. */
+  /** Opens that answer. */
   onReopen: () => void;
 }
 
+/** Props for `PromptBar`. */
 export interface IPromptBar extends IPromptBarStatus {
+  /** The question field. */
   ref: Ref<HTMLTextAreaElement>;
-  /** The send button: where focus returns when the panel is dismissed. */
+  /** The send button. Focus goes back here when the panel is closed. */
   sendButtonRef: Ref<HTMLButtonElement>;
-  /** Whether the panel is showing: with an empty bar the send arrow closes it rather than opens it. */
+  /** Whether the panel is open. With an empty bar, the send arrow then closes it instead of opening it. */
   isPanelOpen: boolean;
+  /** The text in the field. */
   value: string;
+  /** Called when the text changes. */
   onValueChange: (value: string) => void;
+  /** Called by the send button (and by Enter on desktop). */
   onSubmit: () => void;
-  /** Focusing, clicking or typing in the bar. The host uses it to bring a closed panel back. */
+  /** Called on focusing, clicking or typing in the field. `App` uses it to reopen a closed panel. */
   onInteract: () => void;
-  /** A question has been asked, so the bar now invites a follow-up. */
+  /** True once a question has been asked, so the bar asks for a follow-up instead. */
   hasThread: boolean;
-  /** Centres the bar on the dashboard column on desktop; null on mobile, where CSS docks it. */
+  /** Desktop: where the dashboard column is, so the bar can centre on it. `null` on mobile. */
   anchor: IColumnAnchor | null;
-  /** The plus beside the bar: starts a new chat. */
+  /** Called by the + button beside the bar: starts a new chat. */
   onNewChat: () => void;
-  /** How many lines the bar is showing (one to three), so the host can raise what sits above it. */
+  /** Reports how many lines the field shows (1 to 3), so things above the bar can move up. */
   onLinesChange: (lines: number) => void;
 }
