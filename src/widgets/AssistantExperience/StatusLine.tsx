@@ -5,7 +5,10 @@ import { statusLabel } from '@/lib/stream';
 
 import { IStatusLine } from './AssistantExperience.types';
 
-/** One line of progress. Announcements happen in the host's live region, not here. */
+/**
+ * A single line showing the answer's progress: a pulsing dot while it works, a check when done.
+ * Screen readers hear progress from the live region, not from this line.
+ */
 const StatusLine: ReactFC<IStatusLine> = ({ turn }) => (
   <p className="flex min-h-5 items-center gap-2 text-xs text-text-secondary">
     {turn.phase === 'complete' ? (

@@ -12,11 +12,14 @@ import { ICollapseFlight } from '@/types/layout.types';
 import { IInlineTeamOverview } from './TeamOverview.types';
 
 /**
- * The team overview as it first appears on mobile: inline under the brief. Collapsing it is a
- * one-way move into the drawer: the block shrinks and travels, still solid, to the toggle's spot
- * and fades only in the last part of the trip. Its slot closes over the same time, so whatever
- * sits below glides rather than jumps. The flight itself is measured by useRailCollapse and handed
- * in through AnimatePresence's `custom` prop.
+ * Mobile only: the team overview as it first appears, inline under the brief.
+ *
+ * Its Collapse button sends it into the menu toggle beside the greeting, for good:
+ * - the block shrinks and flies to the toggle, still solid, and only fades at the very end;
+ * - the space it leaves closes at the same time, so whatever is below glides up instead of
+ *   jumping.
+ *
+ * `useRailCollapse` measures the flight; AnimatePresence passes it in through its `custom` prop.
  */
 const InlineTeamOverview: ReactFC<IInlineTeamOverview> = ({
   ref,
@@ -30,7 +33,7 @@ const InlineTeamOverview: ReactFC<IInlineTeamOverview> = ({
     <motion.div
       ref={ref}
       className="mt-8"
-      // When the brief's suggested next step above it changes length, glide rather than jump.
+      // When the brief's suggested next step above it changes length, glide instead of jumping.
       layout="position"
       transition={{ layout: { duration: 0.32, ease: EASE_OUT } }}
       variants={{ exit: { height: 0, marginTop: 0, transition: COLLAPSE_TRANSITION } }}
@@ -41,7 +44,7 @@ const InlineTeamOverview: ReactFC<IInlineTeamOverview> = ({
         aria-label="Team overview and pinned answers"
         className="flex flex-col gap-5 overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-xs"
         style={{ transformOrigin: 'center' }}
-        // First paint: the card fades in after the brief, and its contents follow inside it.
+        // On first load the card fades in after the brief, and its contents follow inside it.
         {...loadIn(LOAD_IN.rail)}
         variants={{
           exit: (flight: ICollapseFlight | null) =>
@@ -53,12 +56,12 @@ const InlineTeamOverview: ReactFC<IInlineTeamOverview> = ({
                   scaleY: flight.scaleY,
                   opacity: [1, 1, 0],
                   transition: {
-                    // Position and shrink share one curve, so the block never pokes past the
-                    // screen edge on its way to the toggle.
+                    // Moving and shrinking use the same curve, so the block never pokes past
+                    // the edge of the screen on its way to the toggle.
                     ...COLLAPSE_TRANSITION,
                     ease: COLLAPSE_FLIGHT_EASE,
-                    // Linear: an ease here is applied to the whole timeline, which would reach the
-                    // 85% hold point after only about a quarter of the time and fade the block early.
+                    // Linear on purpose: an easing here would stretch over the whole fade and
+                    // make the block fade out far too early.
                     opacity: {
                       duration: COLLAPSE_TRANSITION.duration,
                       times: [0, 0.85, 1],

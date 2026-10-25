@@ -10,7 +10,10 @@ import { cn } from '@/lib/utils';
 
 import { ISkillRow } from './AssistantExperience.types';
 
-/** One scored skill: name, score bar, the number, and the evidence line beneath. */
+/**
+ * One scored skill on the coaching card: its name, a score bar, the score, and a line of evidence
+ * underneath. The lowest score also gets an info button with a coaching note.
+ */
 const SkillRow: ReactFC<ISkillRow> = ({ row, delay, isLowest, reveal }) => {
   const reduceMotion = useReducedMotion();
   const band = RATING_BANDS[ratingBand(row.score)];

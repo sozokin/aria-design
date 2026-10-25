@@ -1,11 +1,13 @@
 import type { StreamEvent } from './types';
 
+/** The default answer's text, in the three chunks the stream sends. */
 const ANSWER = [
   "Marcus is improving at discovery, especially when he slows down and follows the buyer's language.",
   ' His strongest recent moment was turning a vague security concern into a concrete success measure.',
   ' The next coaching opportunity is to involve more stakeholders before proposing a solution.',
 ];
 
+/** The default answer's coaching card. */
 const COACHING_CARD: Extract<StreamEvent, { type: 'artifact' }> = {
   type: 'artifact',
   kind: 'coaching-card',
@@ -38,9 +40,9 @@ const COACHING_CARD: Extract<StreamEvent, { type: 'artifact' }> = {
 };
 
 /**
- * A second scripted answer, served when the first card's suggested next step
- * is asked as a follow-up, so a thread can show two different answers. Pure
- * fixture data; the contract (status, three deltas, one card, done) is the same.
+ * A second scripted answer's text. It is sent when the first card's suggested next step is
+ * asked as a follow-up, so a conversation can show two different answers.
+ * Test data only: it follows the same pattern (one status, three chunks, one card, done).
  */
 const BROOKFIELD_ANSWER = [
   'For the next Brookfield call, the gap is ownership rather than interest. Omar is engaged on security, but nobody on their side has been named for legal or operational sign-off.',
@@ -48,6 +50,7 @@ const BROOKFIELD_ANSWER = [
   ' Once those owners are known, the security review on September 9 has a clear path to approval.',
 ];
 
+/** The second answer's coaching card. */
 const BROOKFIELD_CARD: Extract<StreamEvent, { type: 'artifact' }> = {
   type: 'artifact',
   kind: 'coaching-card',
@@ -75,20 +78,26 @@ const BROOKFIELD_CARD: Extract<StreamEvent, { type: 'artifact' }> = {
         evidence: 'No agreed checklist for who signs off operational readiness.',
       },
     ],
-    // The last scripted step. Asking it falls back to the first answer (see `answerFor`), so
+    // The last scripted step. Asking it gets the first answer again (see `answerFor`), so
     // following the suggested next steps loops back to the start.
     nextStep:
       'Open the call by asking Omar who owns legal sign-off, then confirm a date for the operational walkthrough.',
   },
 };
 
+/** Everything one scripted answer sends: its status, its text chunks and its card. */
 type ScriptedAnswer = {
   status: string;
   deltas: string[];
   card: Extract<StreamEvent, { type: 'artifact' }>;
 };
 
-/** Picks the scripted answer for a prompt. Everything but the Brookfield follow-up gets the default. */
+/**
+ * Picks which scripted answer to send for a question.
+ *
+ * @param prompt - The question that was asked.
+ * @returns The Brookfield answer for the Brookfield follow-up; the default answer for anything else.
+ */
 function answerFor(prompt: string): ScriptedAnswer {
   const asked = prompt.toLowerCase();
   if (asked.includes('brookfield') && (asked.includes('validate') || asked.includes('readiness'))) {
@@ -101,12 +110,17 @@ function answerFor(prompt: string): ScriptedAnswer {
   return { status: 'Reviewing 6 discovery calls', deltas: ANSWER, card: COACHING_CARD };
 }
 
+/** Waits for the given number of milliseconds. */
 const wait = (milliseconds: number) =>
   new Promise<void>(resolve => window.setTimeout(resolve, milliseconds));
 
 /**
- * The whole candidate contract: one status, three text deltas, one complete
- * artifact, and done. Set speed to 0 in tests or while iterating.
+ * Streams a fake answer, with short pauses between events: one status, three text chunks, one
+ * complete coaching card, then done.
+ *
+ * @param prompt - The question that was asked.
+ * @param options.speed - How fast to play the pauses. 1 is normal; 0 skips them (for tests).
+ * @returns The events, one at a time.
  */
 export async function* streamAnswer(
   prompt: string,

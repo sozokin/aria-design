@@ -8,7 +8,10 @@ import { getInitials } from '@/lib/utils';
 
 import { IPinnedList } from './TeamOverview.types';
 
-/** The "Pinned" block: an empty hint, or one link per pinned card, newest first. */
+/**
+ * The "Pinned" block: a hint when nothing is pinned, otherwise one link per pinned card
+ * (newest first). Each link jumps to its card on the dashboard.
+ */
 const PinnedList: ReactFC<IPinnedList> = ({ pinned, onJump }) => (
   <section
     className="rounded-xl border border-border bg-card p-4 shadow-xs"
@@ -28,8 +31,8 @@ const PinnedList: ReactFC<IPinnedList> = ({ pinned, onJump }) => (
     <AnimatePresence initial={false} mode="popLayout">
       {pinned.length > 0 ? (
         <motion.ul key="entries" className="mt-3 flex flex-col gap-2" aria-label="Pinned answers">
-          {/* No initial={false} here: on the first pin this list mounts fresh, and its entry must
-              still fade in a beat after the card lands. The outer one keeps page load static. */}
+          {/* No `initial={false}` here: the first pin creates this list, and its entry should still
+              fade in a moment after the card lands. The outer one keeps page load static. */}
           <AnimatePresence mode="popLayout">
             {pinned.map(entry => (
               <motion.li
@@ -38,7 +41,7 @@ const PinnedList: ReactFC<IPinnedList> = ({ pinned, onJump }) => (
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                // The entry appears a beat after the card has landed on the dashboard.
+                // The entry appears a moment after the card has landed on the dashboard.
                 transition={{ duration: 0.22, delay: 0.2, layout: { duration: 0.22, delay: 0 } }}
               >
                 <button

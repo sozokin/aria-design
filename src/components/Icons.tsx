@@ -15,7 +15,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 
-/** The shell's icon set, named by what each one means here rather than what it draws. */
+/** The app's icons, named by what they mean here (not by what they look like). */
 const Icons = {
   arrowUp: ArrowUp,
   briefcase: BriefcaseBusiness,

@@ -20,15 +20,18 @@ import { cn } from '@/lib/utils';
 
 import { ITeamOverviewDrawer } from './TeamOverview.types';
 
-// The ring starts just before the collapsing block lands on the toggle.
+/** Seconds before the landing ring starts: just before the collapsing block reaches the toggle. */
 const RING_DELAY = COLLAPSE_TRANSITION.duration - 0.1;
+/** How long the landing ring takes to pulse out, in seconds. */
 const RING_DURATION = 0.5;
 
 /**
- * The mobile dashboard menu: a toggle fixed beside the greeting that opens, in a sheet from the
- * right, what the desktop right rail shows: the date, chat history, the team overview and the
- * pinned answers. The inline team overview collapses into this toggle, and a ring pulses out as
- * the block lands to mark where it went.
+ * Mobile only: the dashboard menu. A toggle fixed beside the greeting opens a side sheet with
+ * everything the desktop right rail shows: the date, chat history, the team stats and pinned
+ * answers.
+ *
+ * The inline team overview collapses into this toggle, and a ring pulses out as it lands to show
+ * where it went.
  */
 const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
   anchor,
@@ -42,23 +45,25 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
   onChoiceClosed,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  // A pinned card chosen inside the sheet is jumped to once the sheet has closed.
+  /** A pinned card picked in the sheet. It is jumped to once the sheet has closed. */
   const pendingJump = useRef<string | null>(null);
-  // A chat chosen inside the sheet: once it has closed, focus goes to the panel showing that chat.
+  /** True when a chat was picked in the sheet: once it has closed, focus goes to the panel. */
   const pendingSwitch = useRef(false);
 
   const pinnedCount = pinned.length;
+  /** The toggle's label for screen readers, including how many answers are pinned. */
   const toggleLabel =
     pinnedCount > 0
       ? `Open dashboard menu, ${pinnedCount} pinned ${pinnedCount === 1 ? 'answer' : 'answers'}`
       : 'Open dashboard menu';
 
+  /** Closes the sheet, then jumps to the picked pinned card. */
   const jumpAfterClose = (turnId: string) => {
     pendingJump.current = turnId;
     setIsOpen(false);
   };
 
-  // A chat chosen in the history sheet inside this one: both close, so the panel showing it is in view.
+  /** A chat picked in the history sheet inside this one: both close, so the panel is in view. */
   const switchAndClose = (chatId: string) => {
     pendingSwitch.current = true;
     setIsOpen(false);
@@ -67,16 +72,15 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
 
   return (
     <div className="fixed z-[8] rounded-lg" style={{ top: anchor.top, right: anchor.right }}>
-      {/* The ring that pulses out as the block lands. */}
+      {/* The ring that pulses out as the collapsing block lands. */}
       {collapsed && (
         <motion.span
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 rounded-lg bg-accent-muted ring-[3px] ring-accent"
           initial={{ opacity: 0, scale: 1 }}
-          // The scale is one segment, so its ease-out decelerates once and never stalls and restarts
-          // (easing over several keyframes applies per segment). The opacity starts at 0, because a
-          // keyframe array shows its first value during the delay, steps to 0.8 the moment the block
-          // lands, then eases out to nothing.
+          // The scale grows in one smooth step, so it slows down once and never stalls. The
+          // opacity starts at 0 (it shows its first value during the delay), jumps to 0.8 as the
+          // block lands, then fades out.
           animate={{ opacity: [0, 0.8, 0], scale: 2.4 }}
           transition={{
             delay: RING_DELAY,
@@ -115,7 +119,7 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
         </SheetTrigger>
         <SheetContent
           side="right"
-          // The same data-[side] selector as the sheet's default width, so this one can override it.
+          // Uses the same data-[side] selector as the sheet's default width, so it can override it.
           className="scrollbar-stable overflow-y-auto data-[side=right]:w-[min(22rem,88vw)]"
           aria-describedby={undefined}
           onCloseAutoFocus={event => {
@@ -127,7 +131,7 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
             }
             const turnId = pendingJump.current;
             if (!turnId) return;
-            // Land on the card instead of back on the toggle.
+            // Land on the picked card, not back on the toggle.
             event.preventDefault();
             pendingJump.current = null;
             onJumpToPinned(turnId);
@@ -138,7 +142,7 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
             <SheetDescription>Today · Friday, September 4</SheetDescription>
           </SheetHeader>
           <div className="flex flex-col gap-6 px-4 pb-6">
-            {/* The desktop rail's order: the date above, chat history under it, then the overview. */}
+            {/* Same order as the desktop rail: the date, then chat history, then the overview. */}
             <div className="-mt-2.5 flex justify-end">
               <ChatHistory
                 chats={chats}

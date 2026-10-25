@@ -5,15 +5,20 @@ import { Badge } from '@/components/ui/badge';
 import { IPromptBarStatus } from './PromptBar.types';
 
 /**
- * A small status inside the prompt bar for an answer the reader is not looking at, behind a closed
- * panel or in another chat: a pulsing dot while it is being worked on, an "Answer ready" pill once
- * it has arrived. Either shows that answer. Nothing otherwise, so the field keeps its full width.
+ * A small status in the prompt bar for an answer the reader is not looking at (panel closed, or
+ * another chat open).
+ *
+ * - While it is being written: a pulsing dot.
+ * - Once it has arrived: an "Answer ready" pill.
+ * - Otherwise: nothing, so the field keeps its full width.
+ *
+ * Clicking either one opens that answer.
  */
 const PromptBarStatus: ReactFC<IPromptBarStatus> = ({ isAnswering, hasUnseenAnswer, onReopen }) => {
   if (hasUnseenAnswer) {
     return (
       <span className="relative shrink-0">
-        {/* Radiates until the pill is clicked or the panel opens, which unmounts the pill. */}
+        {/* A ring keeps pulsing out until the pill is clicked or the panel opens. */}
         <span
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-accent motion-safe:animate-ready-pulse"

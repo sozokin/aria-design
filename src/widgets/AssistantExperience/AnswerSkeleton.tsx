@@ -1,8 +1,9 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
+/** Turns off the skeleton's pulse when the reader prefers reduced motion. */
 const LINE = 'motion-reduce:animate-none';
 
-/** Reserves the space the streamed answer will take, so the text does not push the card around. */
+/** Grey lines that hold the answer text's space, so the card below does not jump when text arrives. */
 const Text = () => (
   <div className="flex flex-col gap-2 py-1" aria-hidden="true">
     <Skeleton className={`${LINE} h-3.5 w-full`} />
@@ -12,12 +13,12 @@ const Text = () => (
 );
 
 /**
- * The skeleton card's height. The real card holds this much while it unfolds, so the space the
- * skeleton reserved is filled rather than given back and taken again.
+ * The card skeleton's height. The real card keeps at least this height while it opens, so it
+ * fills the space the skeleton held instead of shrinking and growing again.
  */
 export const CARD_FOOTPRINT = 'min-h-[21rem]';
 
-/** Reserves the coaching card's footprint while the stream is still working. */
+/** A grey outline that holds the coaching card's space while the answer is still coming. */
 const Card = () => (
   <div
     className={`${CARD_FOOTPRINT} rounded-xl border border-border bg-card p-4`}
@@ -39,6 +40,7 @@ const Card = () => (
   </div>
 );
 
+/** Placeholders shown while an answer streams: `AnswerSkeleton.Text` and `AnswerSkeleton.Card`. */
 const AnswerSkeleton = {
   Text,
   Card,

@@ -1,8 +1,11 @@
 import { useEffect, type RefObject } from 'react';
 
 /**
- * Cmd/Ctrl+K focuses the sidebar search its hint advertises. `beforeFocus` runs first so a compact
- * sidebar can expand and make the field visible. Disabled on mobile, where the field is hidden.
+ * Makes Cmd+K (Ctrl+K on Windows) jump to the sidebar's search field, as its hint promises.
+ *
+ * @param searchRef - The search field.
+ * @param enabled - Off on mobile, where the field is hidden.
+ * @param beforeFocus - Runs first, so a compact sidebar can expand and show the field.
  */
 function useSearchShortcut(
   searchRef: RefObject<HTMLInputElement | null>,
@@ -19,7 +22,7 @@ function useSearchShortcut(
 
       event.preventDefault();
       beforeFocus();
-      // The field may be hidden until the expanded layout has rendered.
+      // Wait a frame: the field may only appear once the expanded sidebar has rendered.
       window.requestAnimationFrame(() => {
         searchRef.current?.focus();
         searchRef.current?.select();

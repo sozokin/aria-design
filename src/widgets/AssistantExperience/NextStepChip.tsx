@@ -5,10 +5,15 @@ import { cn } from '@/lib/utils';
 
 import { INextStepChip } from './AssistantExperience.types';
 
+/** The chip's look, shared by the plain and the clickable version. */
 const CHIP =
   'mt-1.5 inline-flex max-w-full items-start gap-2 rounded-lg bg-accent-muted px-3 py-2 text-left text-[0.8125rem] leading-snug text-accent-muted-foreground';
 
-/** The suggested next step as a chip. With `onAsk` it is a button that asks the step as a question. */
+/**
+ * A suggested next step, shown as a chip.
+ *
+ * With `onAsk`, it is a button that asks the step as a question. Without it, it is plain text.
+ */
 const NextStepChip: ReactFC<INextStepChip> = ({ text, onAsk }) => {
   const content = (
     <>

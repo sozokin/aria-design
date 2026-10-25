@@ -1,13 +1,19 @@
 import { useRef } from 'react';
 
 /**
- * Where the reader had scrolled the panel, kept across a close so reopening can resume there.
- * `key` names what the panel is showing (the chat and how many turns it has); the memory is
- * forgotten when it changes, since a new answer or another chat opens at its own start.
+ * Remembers how far the reader scrolled the panel, so reopening it lands in the same place.
+ *
+ * The memory is tied to `key` (which chat, and how many turns it has). When the key changes,
+ * because a new answer arrived or another chat opened, the panel starts at the top instead.
+ *
+ * @param key - Names what the panel is showing.
+ * @returns `remember(top)` to save the scroll position, and `resumeTop` to restore it (or
+ *   `undefined` when there is nothing to restore).
  */
 function usePanelScrollMemory(key: string) {
   const memory = useRef<{ top: number; key: string } | null>(null);
 
+  /** Saves the current scroll position for this key. */
   const remember = (top: number) => {
     memory.current = { top, key };
   };

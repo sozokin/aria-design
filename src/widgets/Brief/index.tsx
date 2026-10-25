@@ -10,12 +10,21 @@ import { EASE_OUT, LOAD_IN, loadIn } from '@/lib/motion';
 import { IBrief } from './Brief.types';
 
 /**
- * Jordan's morning brief, as the shell provides it, plus a "Suggested next step" chip that
- * mirrors the latest coaching card's next step and asks it when clicked. On first paint its lines
- * fade in top to bottom, after the greeting (LOAD_IN).
+ * Motion props that fade in one line of the brief on first load, after the greeting.
+ *
+ * @param index - The line's position, top to bottom (0 is first).
+ * @returns Motion props with the right delay.
  */
 const line = (index: number) => loadIn(LOAD_IN.brief + index * LOAD_IN.step);
 
+/**
+ * Jordan's morning brief (as the starter app provides it), plus a "Suggested next step" chip.
+ *
+ * - The chip shows the latest coaching card's next step (or the opening question before any
+ *   answer), and asks it when clicked.
+ * - The rep and deal names are chips that open a small preview card.
+ * - On first load, the lines fade in from top to bottom.
+ */
 const Brief: ReactFC<IBrief> = ({ suggestedNextStep, onAskNextStep }) => (
   <section className="brief" aria-labelledby="brief-title">
     <h2 id="brief-title" className="sr-only">
@@ -99,7 +108,7 @@ const Brief: ReactFC<IBrief> = ({ suggestedNextStep, onAskNextStep }) => (
       </motion.li>
     </ul>
 
-    {/* Crossfades whenever a new answer brings a new next step. */}
+    {/* When a new answer brings a new next step, the old chip fades out and the new one fades in. */}
     <motion.div className="mt-1" aria-live="off" {...line(3)}>
       <p className="text-xs font-semibold text-accent-muted-foreground">Suggested next step</p>
       <AnimatePresence initial={false} mode="popLayout">

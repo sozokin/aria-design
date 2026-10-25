@@ -1,133 +1,138 @@
 import type { CoachingCard } from '../../mock/types';
 
+/** Where an answer is: waiting for text, receiving text, or finished. */
 export type TTurnPhase = 'reviewing' | 'streaming' | 'complete';
 
 /** One question and the answer that streams in for it. */
 export interface ITurn {
+  /** The turn's id. */
   id: string;
-  /** The chat this turn belongs to. Turns with the same chat id form one thread. */
+  /** The chat this turn belongs to. Turns with the same chat id make one conversation. */
   chatId: string;
+  /** The question that was asked. */
   prompt: string;
+  /** How far the answer has got. */
   phase: TTurnPhase;
-  /** Progress label from the stream, e.g. "Reviewing 6 discovery calls". */
+  /** The progress label from the stream, for example "Reviewing 6 discovery calls". */
   status: string;
-  /** Answer text accumulated from the text deltas. */
+  /** The answer text so far. */
   text: string;
-  /** The same text as it arrived, one entry per delta, so each can fade in on its own. */
+  /** The same text, one entry per chunk as it arrived, so each chunk can fade in on its own. */
   deltas: string[];
+  /** The coaching card, once it has arrived. */
   card: CoachingCard | null;
 }
 
-/** One chat in the history list. */
+/** One chat in the chat history list. */
 export interface IChatSummary {
+  /** The chat's id. */
   id: string;
-  /** The chat's first question, which is also the panel's title for it. */
+  /** The chat's first question. The panel uses it as the chat's title too. */
   title: string;
   /** How many questions have been asked in it. */
   turnCount: number;
-  /** Who the latest coaching card is about, once one has arrived. */
+  /** Who the latest coaching card is about, once a card has arrived. */
   rep: string | null;
-  /** An answer is still arriving in this chat. */
+  /** True while an answer is still arriving in this chat. */
   isAnswering: boolean;
 }
 
-/** A turn's coaching card once it is pinned to the dashboard. */
+/** A coaching card that has been pinned to the dashboard. */
 export interface IPinnedTurn {
+  /** The turn the card came from. */
   turnId: string;
+  /** The question the card answered. */
   prompt: string;
+  /** The card itself. */
   card: CoachingCard;
-  /** Put back by an undo: it reopens where it was rather than arriving from the panel. */
+  /** True when Undo put it back: it reopens in its old place instead of arriving from the panel. */
   restored?: boolean;
 }
 
-/** A message for the live region. The id forces a DOM change even when the text repeats. */
+/** A message for screen readers. A new id makes the same text be read again. */
 export interface IAnnouncement {
   id: number;
   text: string;
 }
 
 /**
- * What `useAssistant` hands the host: the conversation as read-only state, plus the only actions
- * allowed to change it. Components never set this state directly, so rules such as "opening clears
- * the unseen flag" live in one place.
+ * What `useAssistant` gives `App`: the AI Assistant's state (read only) and the only actions that
+ * may change it.
+ *
+ * Components never change this state directly. That keeps rules such as "opening a chat clears
+ * its unseen mark" in one place.
  */
 export interface IAssistant {
   /**
-   * The active chat's turns, oldest first: one per question, each filled in by its own stream.
-   * The panel renders from it; the latest card's next step feeds the brief.
+   * The active chat's turns, oldest first. The panel shows these, and the latest card's next step
+   * also appears in the brief.
    */
   turns: ITurn[];
-  /** The chat the panel and the prompt bar are about. A new chat has no turns until it is asked. */
+  /** The chat the panel and prompt bar are about. A new chat has no turns until it is asked. */
   activeChatId: string;
-  /** Every chat with at least one turn, most recently asked first, for the history list. */
+  /** Every chat with at least one question, newest first, for the chat history. */
   chats: IChatSummary[];
-  /**
-   * Whether the answer panel is showing. Independent of streaming: closing only hides the panel,
-   * and an answer keeps arriving behind it.
-   */
+  /** Whether the panel is on screen. Closing it only hides it: an answer keeps arriving. */
   isOpen: boolean;
   /**
-   * Desktop only: the panel fills most of the screen, with the chats as a left pane. Remembered
-   * across a close, so a reader who works expanded gets the panel back expanded.
+   * Desktop only: the panel fills most of the screen, with the chats in a left pane. Remembered
+   * after closing, so it comes back the same way.
    */
   isExpanded: boolean;
   /**
-   * An answer is still arriving where the reader is not looking: in another chat, or behind a
-   * closed panel. Drives the prompt bar's pulse.
+   * True while an answer is still arriving somewhere the reader is not looking (another chat, or
+   * behind a closed panel). Shows the pulsing dot in the prompt bar.
    */
   isAnswering: boolean;
   /**
-   * An answer finished out of view (behind a closed panel, or in a chat the reader had left) and
-   * has not been looked at since. Drives the prompt bar's "Answer ready" pill. Not derivable from
-   * `isOpen` and the turns' phases, which read the same once the answer has been seen.
+   * True when an answer finished out of sight and has not been opened yet. Shows the "Answer
+   * ready" pill in the prompt bar. (It cannot be worked out from the other values, because they
+   * look the same before and after the reader has seen the answer.)
    */
   hasUnseenAnswer: boolean;
   /**
-   * The latest message for screen readers: the status, then "Answer ready" with a summary of the
-   * card, and pin and undo. Text chunks are deliberately not announced, and unpin is left to its
-   * toast. Null until something happens.
+   * The latest message for screen readers: the status, then "Answer ready" with a short summary
+   * of the card, then pin and undo. Text chunks are never announced, and the unpin toast speaks
+   * for itself. `null` until something happens.
    */
   announcement: IAnnouncement | null;
-  /**
-   * Coaching cards pinned to the dashboard, newest first. Outlives the panel: the dashboard and
-   * the rail's Pinned list render from it while the panel is closed.
-   */
+  /** Cards pinned to the dashboard, newest first. They stay when the panel closes. */
   pinned: IPinnedTurn[];
-  /** Adds a turn for `prompt`, opens the panel and starts streaming its answer. */
+  /** Asks `prompt` in the active chat: opens the panel and starts streaming the answer. */
   ask: (prompt: string) => void;
-  /** Shows the existing conversation again without asking anything; clears the unseen flag. */
+  /** Opens the panel on the active chat without asking anything. Clears its unseen mark. */
   open: () => void;
-  /** Hides the panel. Leaves the turns and any running stream untouched. */
+  /** Hides the panel. Chats and any answer still arriving are left alone. */
   close: () => void;
   /**
-   * Hides the panel and runs `action` once it has left the screen (the host reports that with
-   * `onClosed`), so a change to the dashboard is seen on the dashboard, not behind the panel. Runs
-   * `action` at once when the panel is not showing.
+   * Hides the panel, then runs `action` once the panel has left the screen (`App` reports that
+   * with `onClosed`). This way a change to the dashboard happens where the reader can see it.
+   * If the panel is already hidden, `action` runs straight away.
    */
   closeThen: (action: () => void) => void;
-  /** The host's word that the panel's exit has finished; runs what `closeThen` left waiting. */
+  /** `App` calls this when the panel has left the screen; runs what `closeThen` was holding. */
   onClosed: () => void;
-  /** Expands the panel to most of the screen, or brings it back to its usual size. */
+  /** Expands the panel to most of the screen, or back to its normal size. */
   setExpanded: (expanded: boolean) => void;
   /**
-   * Makes a fresh, empty chat active and opens the panel on its empty state. If the active chat has
-   * not been asked anything yet, it already is that fresh chat, so only the panel opens.
+   * Starts a new, empty chat and opens the panel on it. If the active chat has no questions yet,
+   * it already is a new chat, so only the panel opens.
    */
   newChat: () => void;
-  /** Makes an earlier chat active and opens the panel on it. */
+  /** Opens an earlier chat in the panel. */
   switchChat: (chatId: string) => void;
-  /** Shows the answer that finished out of view, switching to its chat if the reader has moved on. */
+  /** Opens the answer that finished out of sight, switching chats if needed. */
   openUnseenAnswer: () => void;
-  /** Pins a turn's card to the top of the dashboard and closes the panel. Ignored without a card. */
+  /** Pins a turn's card to the top of the dashboard and closes the panel. Does nothing without a card. */
   pin: (turn: ITurn) => void;
   /**
-   * Takes a card off the dashboard and keeps it, with its position, for `UNDO_WINDOW_MS`. Each
-   * unpin has its own undo, so two quick unpins can both be restored.
+   * Takes a card off the dashboard and keeps it, with its place, for `UNDO_WINDOW_MS`.
+   * Each unpin can be undone on its own.
    */
   unpin: (turnId: string) => void;
-  /** Puts one unpinned card back where it was, if its undo window is still open. */
+  /** Puts an unpinned card back in its old place, if its undo time has not run out. */
   undoUnpin: (turnId: string) => void;
 }
 
-/** Scores are out of 5; the band decides a row's grouping and colour on the card. */
+/** A score's band. Scores are out of 5; the band sets a skill's group and colour on the card. */
 export type TRatingBand = 'strong' | 'developing' | 'focus';

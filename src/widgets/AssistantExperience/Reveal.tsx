@@ -5,12 +5,15 @@ import { EASE_OUT } from '@/lib/motion';
 
 import { IReveal } from './AssistantExperience.types';
 
+/** How content below glides when this block changes height. */
 const LAYOUT_GLIDE = { duration: 0.45, ease: EASE_OUT };
 
 /**
- * Shows a skeleton until `ready`, then the real content in its place: the skeleton fades out as
- * the content fades in. Both keep their layout position, so whatever sits below glides when the
- * content above it grows instead of stepping down a line at a time.
+ * Shows a placeholder until `ready`, then swaps in the real content: the placeholder fades out
+ * as the content fades in.
+ *
+ * Both keep their place in the layout, so when the content grows, whatever is below glides down
+ * smoothly instead of jumping one line at a time.
  */
 const Reveal: ReactFC<IReveal> = ({ ready, skeleton, className, children }) => (
   <AnimatePresence initial={false} mode="popLayout">

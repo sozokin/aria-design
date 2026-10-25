@@ -7,6 +7,7 @@ import { LOAD_IN, loadIn } from '@/lib/motion';
 
 import { ITeamOverview } from './TeamOverview.types';
 
+/** The three stat cards. `trend` is six bar heights, in percent; the last bar is this week. */
 const OVERVIEW_STATS = [
   {
     label: 'Calls reviewed',
@@ -32,14 +33,22 @@ const OVERVIEW_STATS = [
 ] as const;
 
 /**
- * The team's stats and the Pinned block. The same content appears in three places: the desktop
- * right rail, the mobile drawer (with a larger heading) and inline under the brief on mobile,
- * where the parent shows the heading and the stats use the shell's horizontal card scroller. On
- * first paint its blocks fade in one after another (LOAD_IN): top to bottom in the rail, and in
- * the inline card the stats left to right. The drawer mounts later and appears as it is.
+ * The team's stats and the Pinned block. The same content is shown in three places:
+ * - `rail`: the desktop right rail.
+ * - `drawer`: the mobile dashboard menu (with a larger heading).
+ * - `inline`: under the brief on mobile. The parent shows the heading, and the stats scroll
+ *   sideways.
+ *
+ * On first load the blocks fade in one after another (top to bottom in the rail, left to right
+ * inline). The drawer opens later, so it appears as it is.
  */
 const TeamOverview: ReactFC<ITeamOverview> = ({ pinned, onJumpToPinned, variant = 'rail' }) => {
   const showsOwnTitle = variant !== 'inline';
+  /**
+   * Motion props that fade in one block on first load (none in the drawer).
+   *
+   * @param index - The block's place in the order (0 is first).
+   */
   const block = (index: number) =>
     variant === 'drawer' ? {} : loadIn(LOAD_IN.rail + index * LOAD_IN.step);
 

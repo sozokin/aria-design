@@ -7,10 +7,13 @@ import {
   Loader2Icon,
 } from 'lucide-react';
 
-// The shell ships a light theme only, so the theme is fixed rather than read from next-themes.
-// Toasts sit on a white dashboard over white cards, so they take the surface tone and the ring's
-// blue as a border to stand apart from it, with the action in solid info; the text keeps the
-// popover's dark foreground.
+/**
+ * The app's toasts (sonner), styled to match the app.
+ *
+ * - Light theme only, because the app has no dark theme.
+ * - Toasts appear over a white dashboard with white cards, so they use the grey surface colour
+ *   with a blue border to stand out. The action button (Undo) is solid blue; the text stays dark.
+ */
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
@@ -34,7 +37,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast: 'cn-toast',
-          // Important: sonner's own rule paints the action in the toast's text colour.
+          // `!` (important) is needed: sonner's own style would otherwise colour the button like the text.
           actionButton: 'bg-info! text-white!',
         },
       }}
