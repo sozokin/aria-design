@@ -13,6 +13,8 @@ export interface IPromptBarStatus {
 
 export interface IPromptBar extends IPromptBarStatus {
   ref: Ref<HTMLTextAreaElement>;
+  /** The send button: where focus returns when the panel is dismissed. */
+  sendButtonRef: Ref<HTMLButtonElement>;
   /** Whether the panel is showing: with an empty bar the send arrow closes it rather than opens it. */
   isPanelOpen: boolean;
   value: string;

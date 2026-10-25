@@ -7,7 +7,7 @@ import {
   useState,
   type FC as ReactFC,
 } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { Maximize2, Minimize2, Plus, Sparkles, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,17 @@ import { EASE_OUT } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 import { IAssistantPanel } from './AssistantExperience.types';
+
+// What Tab can land on inside the panel.
+const TABBABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** The panel's controls in tab order: rendered, not inert, not taken out of the order. */
+const tabbablesIn = (root: HTMLElement) =>
+  [...root.querySelectorAll<HTMLElement>(TABBABLE)].filter(
+    element =>
+      element.tabIndex >= 0 && !element.closest('[inert]') && element.getClientRects().length > 0,
+  );
 
 // Rises a little and settles, so it reads as coming up from the prompt bar below it.
 const DESKTOP_ENTRANCE = {
@@ -53,7 +64,10 @@ const FORM_SWITCH = { clear: 0.1, shell: 0.4, pane: 0.25, content: 0.25 };
 
 /**
  * The answer surface. Non-modal on purpose: the prompt bar underneath stays usable for follow-ups,
- * so there is no focus trap. Escape closes; the host returns focus to the entry point. Before
+ * so there is no focus trap. It takes focus when it opens (unless it was opened from the bar, which
+ * keeps the caret while the reader types) and when the host asks (focusRequest). While open it sits
+ * between the bar's field and send button in the tab order. Escape closes; the host returns focus to
+ * the entry point. Before
  * anything is asked in a chat the panel asks how it can help and offers a first question.
  * Switching chats, from a history sheet or the expanded panel's pane, swaps the turns in place.
  *
@@ -81,10 +95,12 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
   onSwitchChat,
   onNewChat,
   takeFocus,
+  focusRequest,
   initialScrollTop,
   onScrollChange,
   anchor,
   onDismiss,
+  entryPoint,
   pinned,
   onAsk,
   onPin,
@@ -168,6 +184,17 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
     // Mount only: later prop changes must not refocus or rescroll an open panel.
   }, []);
 
+  // The host asks the open panel to take focus: its content was replaced (a new chat, or an asked
+  // chip that unmounted), or a sheet that held focus has closed. Not while focus is already inside,
+  // so the control the reader is on keeps it. The request the panel mounted with is takeFocus's.
+  const handledFocusRequest = useRef(focusRequest);
+  useEffect(() => {
+    if (focusRequest === handledFocusRequest.current) return;
+    handledFocusRequest.current = focusRequest;
+    const root = rootRef.current;
+    if (root && !root.contains(document.activeElement)) root.focus({ preventScroll: true });
+  }, [focusRequest]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Already handled means a sheet took it (radix listens in the capture phase): that sheet
@@ -181,6 +208,42 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onDismiss]);
+
+  // While the panel is open it sits between the bar's field and its send button in the tab order,
+  // however it was opened: Tab from the field enters the panel, Tab past the panel's last control
+  // lands on the send button, and from there the page's own order carries on. Shift+Tab runs it
+  // back. The panel renders before the bar, so left alone Tab would skip it from the field. Not
+  // while the panel is leaving, and not when anything else (a sheet) has handled the key.
+  const isPresent = useIsPresent();
+  useEffect(() => {
+    if (!isPresent) return;
+
+    const handleTab = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab' || event.defaultPrevented) return;
+      const root = rootRef.current;
+      const field = entryPoint.field.current;
+      const send = entryPoint.send.current;
+      if (!root || !field || !send) return;
+
+      const active = document.activeElement;
+      const controls = tabbablesIn(root);
+      const first = controls[0] ?? root;
+      const last = controls[controls.length - 1] ?? root;
+      const move = (target: HTMLElement) => {
+        event.preventDefault();
+        target.focus();
+      };
+
+      if (!event.shiftKey) {
+        if (active === field) move(first);
+        else if (active === last || (active === root && controls.length === 0)) move(send);
+      } else if (active === send) move(last);
+      else if (active === first || active === root) move(field);
+    };
+
+    document.addEventListener('keydown', handleTab);
+    return () => document.removeEventListener('keydown', handleTab);
+  }, [isPresent, entryPoint]);
 
   // Reopening resumes where the reader left off, if they had scrolled. Before paint, so the panel
   // never flashes at the top first.
@@ -219,7 +282,8 @@ const AssistantPanel: ReactFC<IAssistantPanel> = ({
         ...(!shownExpanded && anchor ? { left: anchor.left, width: anchor.width } : {}),
       }}
       className={cn(
-        'fixed z-(--z-assistant) flex overflow-hidden border border-border bg-popover text-popover-foreground will-change-transform outline-none shell:shadow-lg',
+        // Focus on the panel itself (opened from the keyboard) gets the ring every control has.
+        'fixed z-(--z-assistant) flex overflow-hidden border border-border bg-popover text-popover-foreground will-change-transform outline-none focus-visible:ring-3 focus-visible:ring-ring/50 shell:shadow-lg',
         shownExpanded
           ? // From near the top down to 1rem above the bar; 80% of the viewport's width, but never
             // narrower than 56rem (nearly the whole width on a small desktop). The backdrop covers

@@ -53,6 +53,7 @@ export const promptBarHeight = (lines: number) =>
  */
 const PromptBar: ReactFC<IPromptBar> = ({
   ref,
+  sendButtonRef,
   value,
   onValueChange,
   onSubmit,
@@ -234,6 +235,7 @@ const PromptBar: ReactFC<IPromptBar> = ({
           <Icons.mic data-icon="inline-only" />
         </button>
         <button
+          ref={sendButtonRef}
           className="icon-button primary"
           type="submit"
           aria-label={SEND_LABEL[intent]}

@@ -39,10 +39,13 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
   chats,
   activeChatId,
   onSwitchChat,
+  onChoiceClosed,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   // A pinned card chosen inside the sheet is jumped to once the sheet has closed.
   const pendingJump = useRef<string | null>(null);
+  // A chat chosen inside the sheet: once it has closed, focus goes to the panel showing that chat.
+  const pendingSwitch = useRef(false);
 
   const pinnedCount = pinned.length;
   const toggleLabel =
@@ -57,6 +60,7 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
 
   // A chat chosen in the history sheet inside this one: both close, so the panel showing it is in view.
   const switchAndClose = (chatId: string) => {
+    pendingSwitch.current = true;
     setIsOpen(false);
     onSwitchChat(chatId);
   };
@@ -115,6 +119,12 @@ const TeamOverviewDrawer: ReactFC<ITeamOverviewDrawer> = ({
           className="scrollbar-stable overflow-y-auto data-[side=right]:w-[min(22rem,88vw)]"
           aria-describedby={undefined}
           onCloseAutoFocus={event => {
+            if (pendingSwitch.current) {
+              pendingSwitch.current = false;
+              event.preventDefault();
+              onChoiceClosed?.();
+              return;
+            }
             const turnId = pendingJump.current;
             if (!turnId) return;
             // Land on the card instead of back on the toggle.
