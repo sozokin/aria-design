@@ -1,0 +1,292 @@
+<!--
+  The plugin's window. It holds the GitHub token, shows which tokens differ between Figma and the
+  feat/governance branch, and on Publish writes tokens.json and tokens.css there as one commit.
+  The branch is fixed below; the plugin cannot write anywhere else.
+-->
+<style>
+  body {
+    margin: 0;
+    padding: 16px;
+    font:
+      12px/1.5 Inter,
+      system-ui,
+      sans-serif;
+    color: var(--figma-color-text);
+    background: var(--figma-color-bg);
+  }
+  h1 {
+    margin: 0 0 4px;
+    font-size: 14px;
+  }
+  p {
+    margin: 0 0 12px;
+    color: var(--figma-color-text-secondary);
+  }
+  label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--figma-color-border);
+    border-radius: 6px;
+    color: inherit;
+    background: transparent;
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  button {
+    padding: 6px 12px;
+    border: 1px solid var(--figma-color-border);
+    border-radius: 6px;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.primary {
+    border-color: transparent;
+    color: var(--figma-color-text-onbrand);
+    background: var(--figma-color-bg-brand);
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 8px;
+    padding: 8px 0;
+    border-top: 1px solid var(--figma-color-border);
+  }
+  .name {
+    font-weight: 600;
+  }
+  .values {
+    grid-column: 1 / -1;
+    color: var(--figma-color-text-secondary);
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+  }
+  .swatches {
+    display: flex;
+    gap: 4px;
+  }
+  .swatch {
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--figma-color-border);
+    border-radius: 4px;
+  }
+  #status {
+    margin-top: 12px;
+    white-space: pre-wrap;
+  }
+  #status.error {
+    color: var(--figma-color-text-danger);
+  }
+  a {
+    color: var(--figma-color-text-brand);
+  }
+</style>
+
+<h1>Publish tokens to code</h1>
+<p>
+  Reads <strong id="collection">the dummy collection</strong> and commits it to
+  <strong>sozokin/aria-design</strong> on branch <strong>feat/governance</strong>. Never main.
+</p>
+
+<label for="token">GitHub token</label>
+<input id="token" type="password" autocomplete="off" placeholder="github_pat_…" />
+
+<div class="row">
+  <button id="check">Check changes</button>
+  <button id="publish" class="primary" disabled>Publish to feat/governance</button>
+</div>
+
+<ul id="changes"></ul>
+<div id="status"></div>
+
+<script>
+  const OWNER = 'sozokin';
+  const REPO = 'aria-design';
+  const BRANCH = 'feat/governance';
+  if (BRANCH === 'main' || BRANCH === 'master')
+    throw new Error('This plugin never writes to main.');
+
+  const $ = id => document.getElementById(id);
+  let pending = null; // { changes, json, css } from the last check
+
+  function status(text, isError = false) {
+    $('status').textContent = text;
+    $('status').className = isError ? 'error' : '';
+  }
+
+  async function github(path, init = {}) {
+    const response = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}${path}`, {
+      ...init,
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${$('token').value.trim()}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+      },
+    });
+    if (response.status === 404 && init.allow404) return null;
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(`GitHub ${response.status}: ${body.message || response.statusText}`);
+    }
+    return response.json();
+  }
+
+  $('token').addEventListener('change', () => {
+    parent.postMessage(
+      { pluginMessage: { type: 'save-token', token: $('token').value.trim() } },
+      '*',
+    );
+  });
+
+  $('check').addEventListener('click', async () => {
+    pending = null;
+    $('publish').disabled = true;
+    $('changes').replaceChildren();
+    status('Reading feat/governance…');
+    try {
+      const file = await github(`/contents/tokens/tokens.json?ref=${encodeURIComponent(BRANCH)}`, {
+        allow404: true,
+      });
+      const current = file ? atob(file.content.replace(/\n/g, '')) : '';
+      parent.postMessage({ pluginMessage: { type: 'diff', current } }, '*');
+    } catch (error) {
+      status(error.message, true);
+    }
+  });
+
+  $('publish').addEventListener('click', async () => {
+    if (!pending) return;
+    $('publish').disabled = true;
+    status('Publishing…');
+    try {
+      // Build the commit on the branch as it is right now, and only fast-forward it.
+      const ref = await github(`/git/ref/heads/${BRANCH}`);
+      if (ref.ref !== `refs/heads/${BRANCH}`) throw new Error(`Unexpected branch ${ref.ref}`);
+      const head = await github(`/git/commits/${ref.object.sha}`);
+      const tree = await github('/git/trees', {
+        method: 'POST',
+        body: JSON.stringify({
+          base_tree: head.tree.sha,
+          tree: [
+            { path: 'tokens/tokens.json', mode: '100644', type: 'blob', content: pending.json },
+            { path: 'src/tokens.css', mode: '100644', type: 'blob', content: pending.css },
+          ],
+        }),
+      });
+      if (tree.sha === head.tree.sha) {
+        status('Figma and feat/governance already match. Nothing to publish.');
+        return;
+      }
+      const commit = await github('/git/commits', {
+        method: 'POST',
+        body: JSON.stringify({
+          message: commitMessage(pending.changes),
+          tree: tree.sha,
+          parents: [head.sha],
+        }),
+      });
+      await github(`/git/refs/heads/${BRANCH}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ sha: commit.sha, force: false }),
+      });
+      const url = `https://github.com/${OWNER}/${REPO}/commit/${commit.sha}`;
+      $('status').className = '';
+      $('status').replaceChildren(
+        `Published ${commit.sha.slice(0, 7)} to ${BRANCH}. `,
+        Object.assign(document.createElement('a'), {
+          href: url,
+          target: '_blank',
+          textContent: 'View on GitHub',
+        }),
+        '\nPull the branch and the change shows on localhost.',
+      );
+      pending = null;
+    } catch (error) {
+      status(error.message, true);
+      $('publish').disabled = false;
+    }
+  });
+
+  function commitMessage(changes) {
+    const names = changes.map(c => c.name);
+    const subject =
+      names.length <= 3
+        ? `tokens: publish ${names.join(', ')} from Figma`
+        : `tokens: publish ${names.length} token changes from Figma`;
+    const lines = changes.map(
+      c => `- ${c.name}: ${c.before ?? '(new)'} → ${c.after ?? '(removed)'}`,
+    );
+    return `${subject}\n\n${lines.join('\n')}\n`;
+  }
+
+  function swatch(value) {
+    const box = document.createElement('span');
+    box.className = 'swatch';
+    // References (var(--…)) resolve only in the app; show them as an empty box.
+    if (value && value.startsWith('oklch(')) box.style.background = value;
+    return box;
+  }
+
+  function showChanges(changes) {
+    $('changes').replaceChildren(
+      ...changes.map(change => {
+        const item = document.createElement('li');
+        const name = Object.assign(document.createElement('span'), {
+          className: 'name',
+          textContent: change.name,
+        });
+        const swatches = document.createElement('span');
+        swatches.className = 'swatches';
+        swatches.append(swatch(change.before), '→', swatch(change.after));
+        const values = Object.assign(document.createElement('span'), {
+          className: 'values',
+          textContent: `${change.before ?? '(new)'} → ${change.after ?? '(removed)'}`,
+        });
+        item.append(name, swatches, values);
+        return item;
+      }),
+    );
+  }
+
+  window.onmessage = event => {
+    const message = event.data.pluginMessage;
+    if (!message) return;
+    if (message.type === 'ready') {
+      $('token').value = message.token;
+      $('collection').textContent = message.collection;
+    } else if (message.type === 'diff-result') {
+      showChanges(message.changes);
+      if (message.changes.length === 0) {
+        status('Figma and feat/governance already match. Nothing to publish.');
+      } else {
+        pending = message;
+        $('publish').disabled = false;
+        status(`${message.changes.length} token(s) differ. Publish to commit them to ${BRANCH}.`);
+      }
+    } else if (message.type === 'error') {
+      status(message.message, true);
+    }
+  };
+</script>

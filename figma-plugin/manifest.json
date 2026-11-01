@@ -1,0 +1,13 @@
+{
+  "name": "Aria · Publish tokens to code (governance test)",
+  "id": "aria-governance-publish-tokens",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["https://api.github.com"],
+    "reasoning": "Commits tokens.json and tokens.css to the feat/governance branch of sozokin/aria-design."
+  }
+}
