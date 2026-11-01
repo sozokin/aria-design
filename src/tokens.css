@@ -3,7 +3,7 @@
    `npm run tokens`. CI fails when this file and tokens.json disagree. */
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.1689 0.0021 286.18);
+  --foreground: oklch(0.1689 0.0021 286.17);
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
