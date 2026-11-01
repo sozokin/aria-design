@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b",
+    "tokens": "node scripts/tokens.ts",
+    "tokens:check": "node scripts/tokens.ts --check",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
